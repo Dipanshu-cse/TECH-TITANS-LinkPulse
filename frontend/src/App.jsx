@@ -119,6 +119,7 @@ const STEPS = [
 
 /* ─── Main Page ────────────────────────────────────────────────────────────── */
 export default function LinkPulsePage() {
+  const [theme, setTheme] = useState(() => localStorage.getItem("linkpulse_theme") || "dark")
   const [heroReady, setHeroReady] = useState(false)
   const [videoReady, setVideoReady] = useState(false)
   const [longUrl, setLongUrl] = useState("")
@@ -146,6 +147,11 @@ export default function LinkPulsePage() {
   }, [])
 
   const handleIntroDone = useCallback(() => setHeroReady(true), [])
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem("linkpulse_theme", theme)
+  }, [theme])
 
   useEffect(() => {
     const timer = setTimeout(() => setVideoReady(true), HERO_REVEAL_MS)
@@ -258,22 +264,26 @@ export default function LinkPulsePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#050507] text-white font-sans antialiased overflow-x-hidden">
+    <main data-theme={theme} className="min-h-screen bg-[#050507] text-white font-sans antialiased overflow-x-hidden">
       <AnimatedBackground />
       <IntroAnimation onDone={handleIntroDone} />
-      <MobileNav onGetStarted={scrollToShortener} />
+      <MobileNav
+        onGetStarted={scrollToShortener}
+        theme={theme}
+        onToggleTheme={() => setTheme(currentTheme => currentTheme === "dark" ? "light" : "dark")}
+      />
 
       {/* ─── HERO ──────────────────────────────────────────────────────────── */}
       <section className="relative h-screen overflow-hidden flex items-end">
         <video
           autoPlay loop muted playsInline
-          className="absolute inset-0 z-0 h-full w-full object-cover opacity-30"
+          className="hero-video absolute inset-0 z-0 h-full w-full object-cover opacity-30"
           src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/agentic-hero-9yW3wnTNMfn2U6lsVhTTZSJFEvAoSj.mp4"
           style={{ transform: videoReady ? "scale(1.05)" : "scale(0.85)", transition: "transform 2s cubic-bezier(0.16, 1, 0.3, 1)" }}
         />
         {/* Overlays */}
         <div className="absolute inset-0 z-10" style={{ background: "radial-gradient(ellipse 80% 60% at 50% 100%, rgba(139,92,246,0.15) 0%, transparent 70%)" }} />
-        <div className="absolute inset-x-0 bottom-0 z-10 h-[70%]" style={{ background: "linear-gradient(to top, #050507 0%, #050507 15%, rgba(5,5,7,0.8) 40%, transparent 100%)" }} />
+        <div className="hero-bottom-overlay absolute inset-x-0 bottom-0 z-10 h-[70%]" style={{ background: "linear-gradient(to top, #050507 0%, #050507 15%, rgba(5,5,7,0.8) 40%, transparent 100%)" }} />
 
         {/* Floating pills */}
         <FloatingPill text="go.lp/launch-2025" delay={0} x={72} y={20} />

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Link2, ArrowUpRight, Menu, X } from "lucide-react"
+import { ArrowUpRight, Menu, Moon, Sun, X } from "lucide-react"
 
 const NAV_LINKS = [
   { label: "Features", href: "#features" },
@@ -10,9 +10,18 @@ const NAV_LINKS = [
   { label: "Analytics", href: "#shortener" },
 ]
 
-export function MobileNav({ onGetStarted }: { onGetStarted: () => void }) {
+export function MobileNav({
+  onGetStarted,
+  theme,
+  onToggleTheme,
+}: {
+  onGetStarted: () => void
+  theme: "dark" | "light"
+  onToggleTheme: () => void
+}) {
   const [open, setOpen] = useState(false)
   const close = () => setOpen(false)
+  const isDark = theme === "dark"
 
   return (
     <div className="fixed top-4 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
@@ -22,11 +31,13 @@ export function MobileNav({ onGetStarted }: { onGetStarted: () => void }) {
         <nav
           className="flex items-center justify-between px-5 py-3 rounded-2xl"
           style={{
-            border: "1px solid rgba(255,255,255,0.08)",
-            background: "rgba(5,5,7,0.80)",
+            border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(37,34,55,0.12)"}`,
+            background: isDark ? "rgba(5,5,7,0.80)" : "rgba(250,249,255,0.88)",
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.04) inset",
+            boxShadow: isDark
+              ? "0 8px 32px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.04) inset"
+              : "0 8px 32px rgba(39,32,72,0.12), 0 1px 0 rgba(255,255,255,0.8) inset",
           }}
         >
           {/* Logo */}
@@ -43,7 +54,7 @@ export function MobileNav({ onGetStarted }: { onGetStarted: () => void }) {
             </div>
             <span style={{
               fontSize: 13, fontWeight: 500, letterSpacing: "0.04em",
-              color: "rgba(255,255,255,0.75)",
+              color: isDark ? "rgba(255,255,255,0.75)" : "#29263a",
             }}>
               LinkPulse
             </span>
@@ -56,12 +67,12 @@ export function MobileNav({ onGetStarted }: { onGetStarted: () => void }) {
                 key={l.label}
                 href={l.href}
                 style={{
-                  fontSize: 12, color: "rgba(255,255,255,0.45)",
+                  fontSize: 12, color: isDark ? "rgba(255,255,255,0.45)" : "#625f72",
                   letterSpacing: "0.03em", textDecoration: "none",
                   transition: "color 0.2s ease",
                 }}
-                onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.85)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.45)")}
+                onMouseEnter={e => (e.currentTarget.style.color = isDark ? "rgba(255,255,255,0.85)" : "#29263a")}
+                onMouseLeave={e => (e.currentTarget.style.color = isDark ? "rgba(255,255,255,0.45)" : "#625f72")}
               >
                 {l.label}
               </a>
@@ -70,6 +81,15 @@ export function MobileNav({ onGetStarted }: { onGetStarted: () => void }) {
 
           {/* Right side */}
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className="theme-toggle"
+              aria-label={`Switch to ${isDark ? "light" : "dark"} theme`}
+              title={`Switch to ${isDark ? "light" : "dark"} theme`}
+            >
+              {isDark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
+            </button>
             <button
               onClick={onGetStarted}
               className="hidden md:inline-flex items-center gap-2"
@@ -92,9 +112,9 @@ export function MobileNav({ onGetStarted }: { onGetStarted: () => void }) {
               onClick={() => setOpen(v => !v)}
               className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg"
               style={{
-                border: "1px solid rgba(255,255,255,0.08)",
-                background: "rgba(255,255,255,0.04)",
-                color: "rgba(255,255,255,0.6)",
+                border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(37,34,55,0.12)"}`,
+                background: isDark ? "rgba(255,255,255,0.04)" : "rgba(37,34,55,0.04)",
+                color: isDark ? "rgba(255,255,255,0.6)" : "#625f72",
                 cursor: "pointer",
                 transition: "background 0.2s ease",
               }}
@@ -116,8 +136,8 @@ export function MobileNav({ onGetStarted }: { onGetStarted: () => void }) {
           <div
             className="rounded-2xl px-2 py-2 flex flex-col gap-0.5"
             style={{
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "rgba(5,5,7,0.92)",
+              border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(37,34,55,0.12)"}`,
+              background: isDark ? "rgba(5,5,7,0.92)" : "rgba(250,249,255,0.96)",
               backdropFilter: "blur(20px)",
               WebkitBackdropFilter: "blur(20px)",
             }}
@@ -129,17 +149,17 @@ export function MobileNav({ onGetStarted }: { onGetStarted: () => void }) {
                 onClick={close}
                 style={{
                   padding: "12px 16px", fontSize: 14,
-                  color: "rgba(255,255,255,0.55)", borderRadius: 12,
+                  color: isDark ? "rgba(255,255,255,0.55)" : "#625f72", borderRadius: 12,
                   textDecoration: "none", transition: "background 0.15s ease, color 0.15s ease",
                   display: "block",
                 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.04)"
-                  e.currentTarget.style.color = "rgba(255,255,255,0.85)"
+                  e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.04)" : "rgba(37,34,55,0.05)"
+                  e.currentTarget.style.color = isDark ? "rgba(255,255,255,0.85)" : "#29263a"
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.background = "transparent"
-                  e.currentTarget.style.color = "rgba(255,255,255,0.55)"
+                  e.currentTarget.style.color = isDark ? "rgba(255,255,255,0.55)" : "#625f72"
                 }}
               >
                 {l.label}

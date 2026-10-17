@@ -686,3 +686,137 @@ body {
 
 /* ─── Focus ring override ───────────────────────────────────────────────────── */
 :focus-visible { outline: 2px solid rgba(139,92,246,0.6); outline-offset: 2px; }
+
+/* ─── Theme Toggle ─────────────────────────────────────────────────────────── */
+.theme-toggle {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.75);
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background: rgba(255,255,255,0.1);
+  color: white;
+}
+
+.theme-toggle svg { width: 16px; height: 16px; }
+
+/* ─── Light Theme ──────────────────────────────────────────────────────────── */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f7f6fb;
+  --surface: rgba(255,255,255,0.78);
+  --border: rgba(37,34,55,0.1);
+  --border-strong: rgba(37,34,55,0.16);
+  --text: #29263a;
+  --muted: rgba(41,38,58,0.62);
+}
+
+[data-theme="light"] body { background-color: var(--bg); color: var(--text); }
+
+[data-theme="light"] main[data-theme="light"] {
+  background-color: #f7f6fb !important;
+  color: #29263a;
+}
+
+[data-theme="light"] .hero-video { opacity: 0.08; }
+
+[data-theme="light"] .hero-bottom-overlay {
+  background: linear-gradient(to top, #f7f6fb 0%, #f7f6fb 15%, rgba(247,246,251,0.82) 45%, transparent 100%) !important;
+}
+
+[data-theme="light"] .hero-headline,
+[data-theme="light"] .section-title { color: #252238; }
+
+[data-theme="light"] .hero-sub,
+[data-theme="light"] .section-sub { color: rgba(41,38,58,0.62); }
+
+[data-theme="light"] .hero-badge,
+[data-theme="light"] .hero-pillar { color: rgba(41,38,58,0.62); }
+
+[data-theme="light"] .floating-pill {
+  border-color: rgba(37,34,55,0.12);
+  background: rgba(255,255,255,0.72);
+  color: rgba(41,38,58,0.72);
+}
+
+[data-theme="light"] .glass-card {
+  border-color: rgba(37,34,55,0.1);
+  background: rgba(255,255,255,0.76);
+  box-shadow: 0 16px 48px rgba(39,32,72,0.06);
+}
+
+[data-theme="light"] .glass-card-glow {
+  border-color: rgba(139,92,246,0.22);
+  background: rgba(255,255,255,0.82);
+}
+
+[data-theme="light"] .feature-card,
+[data-theme="light"] .step-card {
+  border-color: rgba(37,34,55,0.09);
+  background: rgba(255,255,255,0.62);
+}
+
+[data-theme="light"] .feature-card:hover,
+[data-theme="light"] .step-card:hover { background: rgba(255,255,255,0.92); }
+
+[data-theme="light"] .form-input,
+[data-theme="light"] .form-input-prefix {
+  border-color: rgba(37,34,55,0.14);
+  background: rgba(255,255,255,0.78);
+  color: #29263a;
+}
+
+[data-theme="light"] .form-input::placeholder { color: rgba(41,38,58,0.42); }
+[data-theme="light"] .custom-checkbox { border-color: rgba(37,34,55,0.2); background: rgba(37,34,55,0.03); }
+
+[data-theme="light"] .scroll-indicator {
+  border-color: rgba(37,34,55,0.14);
+  background: rgba(255,255,255,0.75);
+  color: rgba(41,38,58,0.65);
+}
+
+[data-theme="light"] .modal-card {
+  border-color: rgba(37,34,55,0.12);
+  background: rgba(250,249,255,0.97);
+  box-shadow: 0 32px 80px rgba(39,32,72,0.2), 0 0 80px rgba(139,92,246,0.08);
+}
+
+[data-theme="light"] [class*="text-white/90"],
+[data-theme="light"] [class*="text-white/80"],
+[data-theme="light"] [class*="text-white/70"],
+[data-theme="light"] [class*="text-white/60"] { color: #343148 !important; }
+
+[data-theme="light"] [class*="text-white/50"],
+[data-theme="light"] [class*="text-white/40"],
+[data-theme="light"] [class*="text-white/35"] { color: #625f72 !important; }
+
+[data-theme="light"] [class*="text-white/30"],
+[data-theme="light"] [class*="text-white/25"],
+[data-theme="light"] [class*="text-white/20"],
+[data-theme="light"] [class*="text-white/15"],
+[data-theme="light"] [class*="text-white/10"] { color: #777487 !important; }
+
+[data-theme="light"] [class~="text-white"] { color: #29263a !important; }
+
+[data-theme="light"] [class*="bg-white/"] { background-color: rgba(37,34,55,0.045); }
+[data-theme="light"] [class*="border-white/"] { border-color: rgba(37,34,55,0.12); }
+
+[data-theme="light"] .theme-toggle {
+  border-color: rgba(37,34,55,0.14);
+  background: rgba(37,34,55,0.045);
+  color: #514d65;
+}
+
+[data-theme="light"] .theme-toggle:hover {
+  background: rgba(37,34,55,0.09);
+  color: #29263a;
+}
