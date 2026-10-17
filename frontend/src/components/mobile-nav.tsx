@@ -1,24 +1,17 @@
 "use client"
 
 import { useState } from "react"
+import { Link2, ArrowUpRight, Menu, X } from "lucide-react"
 
 const NAV_LINKS = [
   { label: "Features", href: "#features" },
-  { label: "Bot Shield", href: "#bot-shield" },
-  { label: "Analytics", href: "#analytics" },
-  { label: "CSV Doctor", href: "#csv-doctor" },
+  { label: "How It Works", href: "#how-it-works" },
+  { label: "Bot Shield", href: "#shortener" },
+  { label: "Analytics", href: "#shortener" },
 ]
-
-const NAV_STYLE = {
-  backdropFilter: "blur(16px)",
-  WebkitBackdropFilter: "blur(16px)",
-  background: "rgba(245,244,240,0.30)",
-  boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.06)",
-} as const
 
 export function MobileNav({ onGetStarted }: { onGetStarted: () => void }) {
   const [open, setOpen] = useState(false)
-
   const close = () => setOpen(false)
 
   return (
@@ -27,57 +20,90 @@ export function MobileNav({ onGetStarted }: { onGetStarted: () => void }) {
 
         {/* Main bar */}
         <nav
-          className="flex items-center justify-between px-5 py-3 rounded-2xl border border-black/[0.06]"
-          style={NAV_STYLE}
+          className="flex items-center justify-between px-5 py-3 rounded-2xl"
+          style={{
+            border: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(5,5,7,0.80)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.04) inset",
+          }}
         >
-          <span className="font-pixel text-xs tracking-[0.25em] text-black/70">LinkPulse</span>
+          {/* Logo */}
+          <div className="flex items-center gap-2.5">
+            <div style={{
+              width: 28, height: 28,
+              borderRadius: 8,
+              background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 9, fontWeight: 700, color: "white", letterSpacing: "0.05em",
+              flexShrink: 0,
+            }}>
+              LP
+            </div>
+            <span style={{
+              fontSize: 13, fontWeight: 500, letterSpacing: "0.04em",
+              color: "rgba(255,255,255,0.75)",
+            }}>
+              LinkPulse
+            </span>
+          </div>
 
           {/* Desktop links */}
-          <div className="hidden md:flex items-center gap-7" style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}>
+          <div className="hidden md:flex items-center gap-7">
             {NAV_LINKS.map(l => (
               <a
                 key={l.label}
                 href={l.href}
-                className="text-[11px] text-black/60 hover:text-black transition-colors duration-200 tracking-wide"
+                style={{
+                  fontSize: 12, color: "rgba(255,255,255,0.45)",
+                  letterSpacing: "0.03em", textDecoration: "none",
+                  transition: "color 0.2s ease",
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = "rgba(255,255,255,0.85)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.45)")}
               >
                 {l.label}
               </a>
             ))}
           </div>
 
+          {/* Right side */}
           <div className="flex items-center gap-2">
-            <button onClick={onGetStarted} className="text-[11px] px-4 py-2 rounded-xl border border-black/10 text-black/60 hover:text-black hover:border-black/20 hover:bg-black/[0.03] transition-all duration-200 tracking-wide hidden md:block" style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}>
-              Get Started
+            <button
+              onClick={onGetStarted}
+              className="hidden md:inline-flex items-center gap-2"
+              style={{
+                fontSize: 12, padding: "7px 16px", borderRadius: 100,
+                background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)",
+                border: "none", color: "white", cursor: "pointer",
+                fontWeight: 500, letterSpacing: "0.02em",
+                boxShadow: "0 4px 16px rgba(124,58,237,0.35)",
+                transition: "opacity 0.2s ease",
+              }}
+              onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.opacity = "0.85")}
+              onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.opacity = "1")}
+            >
+              Get Started <ArrowUpRight style={{ width: 12, height: 12 }} />
             </button>
 
-            {/* Burger — mobile only */}
+            {/* Burger */}
             <button
               onClick={() => setOpen(v => !v)}
-              className="md:hidden flex flex-col justify-center items-center w-8 h-8 gap-[5px] rounded-lg hover:bg-black/[0.04] transition-colors"
+              className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg"
+              style={{
+                border: "1px solid rgba(255,255,255,0.08)",
+                background: "rgba(255,255,255,0.04)",
+                color: "rgba(255,255,255,0.6)",
+                cursor: "pointer",
+                transition: "background 0.2s ease",
+              }}
               aria-label={open ? "Close menu" : "Open menu"}
             >
-              <span
-                className="block h-px bg-black/60 transition-all duration-300 origin-center"
-                style={{
-                  width: "18px",
-                  transform: open ? "translateY(6px) rotate(45deg)" : "none",
-                }}
-              />
-              <span
-                className="block h-px bg-black/60 transition-all duration-300"
-                style={{
-                  width: "18px",
-                  opacity: open ? 0 : 1,
-                  transform: open ? "scaleX(0)" : "none",
-                }}
-              />
-              <span
-                className="block h-px bg-black/60 transition-all duration-300 origin-center"
-                style={{
-                  width: "18px",
-                  transform: open ? "translateY(-6px) rotate(-45deg)" : "none",
-                }}
-              />
+              {open
+                ? <X style={{ width: 14, height: 14 }} />
+                : <Menu style={{ width: 14, height: 14 }} />
+              }
             </button>
           </div>
         </nav>
@@ -88,23 +114,49 @@ export function MobileNav({ onGetStarted }: { onGetStarted: () => void }) {
           style={{ maxHeight: open ? "320px" : "0px", opacity: open ? 1 : 0 }}
         >
           <div
-            className="rounded-2xl border border-black/[0.06] px-2 py-2 flex flex-col"
-            style={NAV_STYLE}
+            className="rounded-2xl px-2 py-2 flex flex-col gap-0.5"
+            style={{
+              border: "1px solid rgba(255,255,255,0.08)",
+              background: "rgba(5,5,7,0.92)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+            }}
           >
             {NAV_LINKS.map(l => (
               <a
                 key={l.label}
                 href={l.href}
                 onClick={close}
-                className="px-4 py-3 text-sm text-black/60 hover:text-black hover:bg-black/[0.03] rounded-xl transition-colors tracking-wide"
-                style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}
+                style={{
+                  padding: "12px 16px", fontSize: 14,
+                  color: "rgba(255,255,255,0.55)", borderRadius: 12,
+                  textDecoration: "none", transition: "background 0.15s ease, color 0.15s ease",
+                  display: "block",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.04)"
+                  e.currentTarget.style.color = "rgba(255,255,255,0.85)"
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = "transparent"
+                  e.currentTarget.style.color = "rgba(255,255,255,0.55)"
+                }}
               >
                 {l.label}
               </a>
             ))}
             <div className="mt-1 px-2 pb-1">
-              <button onClick={() => { onGetStarted(); close() }} className="w-full text-[11px] px-4 py-2.5 rounded-xl border border-black/10 text-black/60 hover:text-black hover:border-black/20 hover:bg-black/[0.03] transition-all duration-200 tracking-wide" style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}>
-                Get Started
+              <button
+                onClick={() => { onGetStarted(); close() }}
+                style={{
+                  width: "100%", padding: "12px 16px", borderRadius: 14,
+                  background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)",
+                  border: "none", color: "white", cursor: "pointer",
+                  fontSize: 13, fontWeight: 500,
+                  boxShadow: "0 4px 20px rgba(124,58,237,0.3)",
+                }}
+              >
+                Get Started Free →
               </button>
             </div>
           </div>
