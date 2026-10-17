@@ -5,7 +5,7 @@ import {
   ArrowDown, ArrowUpRight, Check, Copy, ExternalLink,
   KeyRound, Link2, LockKeyhole, ShieldCheck, Sparkles, X,
   Zap, BarChart3, Globe, Layers, MousePointerClick,
-  ChevronRight, Star, Sun, Moon
+  ChevronRight, Star
 } from "lucide-react"
 import { IntroAnimation, HERO_REVEAL_MS } from "./components/intro-animation"
 import { MobileNav } from "./components/mobile-nav"
@@ -13,6 +13,115 @@ import { supabase } from "./supabase"
 
 /* ─── Animated Background Orbs ─────────────────────────────────────────────── */
 function AnimatedBackground() {
+  const canvasRef = useRef(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return undefined
+    const context = canvas.getContext("2d")
+    if (!context) return undefined
+
+    const pointer = { x: -1000, y: -1000, active: false }
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    let width = 0
+    let height = 0
+    let dots = []
+    let animationFrame
+
+    const resize = () => {
+      const ratio = Math.min(window.devicePixelRatio || 1, 1.5)
+      width = window.innerWidth
+      height = window.innerHeight
+      canvas.width = width * ratio
+      canvas.height = height * ratio
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
+      context.setTransform(ratio, 0, 0, ratio, 0, 0)
+      dots = []
+      const spacing = width < 700 ? 34 : 28
+      for (let y = spacing / 2; y < height + spacing; y += spacing) {
+        for (let x = spacing / 2; x < width + spacing; x += spacing) {
+          dots.push({ x, y, phase: Math.random() * Math.PI * 2 })
+        }
+      }
+    }
+
+    const draw = (time = 0) => {
+      const dark = document.documentElement.dataset.theme !== "light"
+      context.clearRect(0, 0, width, height)
+      const motionTime = reduceMotion ? 0 : time * 0.0007
+      const influenceRadius = 190
+      const activeDots = []
+
+      dots.forEach((dot) => {
+        const driftX = Math.sin(motionTime + dot.phase) * 2
+        const driftY = Math.cos(motionTime * 0.8 + dot.phase) * 2
+        const x = dot.x + driftX
+        const y = dot.y + driftY
+        const distance = Math.hypot(pointer.x - x, pointer.y - y)
+        const influence = pointer.active ? Math.max(0, 1 - distance / influenceRadius) : 0
+        const wave = Math.sin(motionTime * 2 + dot.phase) * 0.12
+        const radius = 1.1 + influence * 2.8
+        const alpha = (dark ? 0.12 : 0.09) + influence * 0.7 + wave
+
+        context.beginPath()
+        context.arc(x, y, radius, 0, Math.PI * 2)
+        context.fillStyle = dark
+          ? `rgba(112, 211, 255, ${Math.max(0.04, alpha)})`
+          : `rgba(109, 40, 217, ${Math.max(0.035, alpha * 0.72)})`
+        context.fill()
+        if (influence > 0.55) activeDots.push({ x, y, influence })
+      })
+
+      context.lineWidth = 0.6
+      activeDots.forEach((dot, index) => {
+        activeDots.slice(index + 1).forEach((next) => {
+          const distance = Math.hypot(dot.x - next.x, dot.y - next.y)
+          if (distance < 58) {
+            context.beginPath()
+            context.moveTo(dot.x, dot.y)
+            context.lineTo(next.x, next.y)
+            context.strokeStyle = dark
+              ? `rgba(99, 202, 255, ${0.16 * dot.influence})`
+              : `rgba(124, 58, 237, ${0.10 * dot.influence})`
+            context.stroke()
+          }
+        })
+      })
+
+      if (pointer.active) {
+        const glow = context.createRadialGradient(pointer.x, pointer.y, 0, pointer.x, pointer.y, 210)
+        glow.addColorStop(0, dark ? "rgba(63, 190, 255, 0.12)" : "rgba(139, 92, 246, 0.09)")
+        glow.addColorStop(0.45, dark ? "rgba(63, 190, 255, 0.035)" : "rgba(139, 92, 246, 0.025)")
+        glow.addColorStop(1, "rgba(0, 0, 0, 0)")
+        context.fillStyle = glow
+        context.fillRect(pointer.x - 210, pointer.y - 210, 420, 420)
+      }
+
+      if (!reduceMotion) animationFrame = requestAnimationFrame(draw)
+    }
+
+    const movePointer = (event) => {
+      pointer.x = event.clientX
+      pointer.y = event.clientY
+      pointer.active = true
+    }
+    const leavePointer = () => { pointer.active = false }
+
+    resize()
+    draw()
+    window.addEventListener("resize", resize)
+    window.addEventListener("pointermove", movePointer, { passive: true })
+    window.addEventListener("pointerleave", leavePointer)
+
+    return () => {
+      window.removeEventListener("resize", resize)
+      window.removeEventListener("pointermove", movePointer)
+      window.removeEventListener("pointerleave", leavePointer)
+      if (animationFrame) cancelAnimationFrame(animationFrame)
+    }
+  }, [])
+
   return (
     <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
       <div className="orb orb-1" />
@@ -20,6 +129,7 @@ function AnimatedBackground() {
       <div className="orb orb-3" />
       <div className="orb orb-4" />
       <div className="grid-overlay" />
+      <canvas ref={canvasRef} className="interactive-dot-field" />
     </div>
   )
 }
@@ -42,6 +152,96 @@ function GlassCard({ children, className = "", glow = false }) {
   return (
     <div className={`glass-card ${glow ? "glass-card-glow" : ""} ${className}`}>
       {children}
+    </div>
+  )
+}
+
+/* ─── Desktop Cursor Experience ───────────────────────────────────────────── */
+function CustomCursor() {
+  const cursorRef = useRef(null)
+  const trailRef = useRef(null)
+  const positionRef = useRef({ x: -100, y: -100 })
+  const previousPositionRef = useRef({ x: -100, y: -100 })
+  const velocityRef = useRef({ x: 0, y: 0 })
+  const frameRef = useRef(null)
+  const [isVisible, setIsVisible] = useState(false)
+  const [isInteractive, setIsInteractive] = useState(false)
+  const [rippleId, setRippleId] = useState(0)
+  const [ripplePosition, setRipplePosition] = useState({ x: 0, y: 0 })
+
+  useEffect(() => {
+    const finePointer = window.matchMedia("(pointer: fine)")
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)")
+    if (!finePointer.matches || reducedMotion.matches) return undefined
+
+    document.documentElement.classList.add("cursor-enabled")
+
+    const render = () => {
+      const { x, y } = positionRef.current
+      const velocity = velocityRef.current
+      velocity.x *= 0.84
+      velocity.y *= 0.84
+      const speed = Math.hypot(velocity.x, velocity.y)
+      const trailLength = Math.min(12 + speed * 4.2, 180)
+      const angle = Math.atan2(velocity.y, velocity.x) * (180 / Math.PI)
+
+      if (cursorRef.current) cursorRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`
+      if (trailRef.current) {
+        trailRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${angle}deg) scaleX(${trailLength / 180})`
+        trailRef.current.style.opacity = `${Math.min(0.4 + speed / 20, 0.95)}`
+      }
+      frameRef.current = requestAnimationFrame(render)
+    }
+
+    const handleMove = (event) => {
+      const previous = previousPositionRef.current
+      velocityRef.current = {
+        x: event.clientX - previous.x,
+        y: event.clientY - previous.y
+      }
+      previousPositionRef.current = { x: event.clientX, y: event.clientY }
+      positionRef.current = { x: event.clientX, y: event.clientY }
+      setIsVisible(true)
+      const target = event.target instanceof Element
+        ? event.target.closest("button, a, input, textarea, select, [data-cursor]")
+        : null
+      setIsInteractive(Boolean(target))
+    }
+    const handleLeave = () => setIsVisible(false)
+    const handleEnter = () => setIsVisible(true)
+    const handleDown = (event) => {
+      positionRef.current = { x: event.clientX, y: event.clientY }
+      setRipplePosition({ x: event.clientX, y: event.clientY })
+      setRippleId(id => id + 1)
+    }
+
+    window.addEventListener("pointermove", handleMove, { passive: true })
+    window.addEventListener("pointerleave", handleLeave)
+    window.addEventListener("pointerenter", handleEnter)
+    window.addEventListener("pointerdown", handleDown, { passive: true })
+    frameRef.current = requestAnimationFrame(render)
+
+    return () => {
+      document.documentElement.classList.remove("cursor-enabled")
+      window.removeEventListener("pointermove", handleMove)
+      window.removeEventListener("pointerleave", handleLeave)
+      window.removeEventListener("pointerenter", handleEnter)
+      window.removeEventListener("pointerdown", handleDown)
+      if (frameRef.current) cancelAnimationFrame(frameRef.current)
+    }
+  }, [])
+
+  return (
+    <div className={`custom-cursor-layer ${isVisible ? "is-visible" : ""} ${isInteractive ? "is-interactive" : ""}`} aria-hidden="true">
+      <span ref={trailRef} className="cursor-trail" />
+      <span ref={cursorRef} className="cursor-core" />
+      {rippleId > 0 && (
+        <span
+          key={rippleId}
+          className="cursor-ripple"
+          style={{ left: ripplePosition.x, top: ripplePosition.y }}
+        />
+      )}
     </div>
   )
 }
@@ -262,6 +462,7 @@ export default function LinkPulsePage() {
   if (redirecting) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-6">
+        <CustomCursor />
         <AnimatedBackground />
         <div className="relative z-10 flex flex-col items-center gap-6">
           <div className="redirect-logo">
@@ -278,6 +479,7 @@ export default function LinkPulsePage() {
 
   return (
     <main className="min-h-screen font-sans antialiased overflow-x-hidden" style={{ color: "var(--text-primary)" }}>
+      <CustomCursor />
       <AnimatedBackground />
       <IntroAnimation onDone={handleIntroDone} />
       <MobileNav onGetStarted={scrollToShortener} theme={theme} onToggleTheme={toggleTheme} />

@@ -245,6 +245,70 @@ body {
               background 0.5s cubic-bezier(0.4,0,0.2,1);
 }
 
+/* ─── Cursor Experience ───────────────────────────────────────────────────── */
+.custom-cursor-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.custom-cursor-layer.is-visible { opacity: 1; }
+.cursor-core,
+.cursor-trail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: block;
+  pointer-events: none;
+  will-change: transform;
+}
+.cursor-core {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border: 1px solid rgba(255,255,255,0.95);
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 5px #ffffff, 0 0 14px rgba(139,92,246,0.95), 0 0 26px rgba(99,102,241,0.65);
+}
+.cursor-trail {
+  width: 180px;
+  height: 2px;
+  margin: -1px 0 0 -180px;
+  transform-origin: 100% 50%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent 0%, rgba(99,102,241,0.12) 28%, rgba(139,92,246,0.62) 78%, #ffffff 100%);
+  box-shadow: 0 0 5px rgba(139,92,246,0.72), 0 0 13px rgba(99,102,241,0.42);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.is-interactive .cursor-core {
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+}
+.cursor-ripple {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border: 1px solid rgba(196,181,253,0.9);
+  border-radius: 50%;
+  animation: cursorRipple 0.7s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes cursorRipple {
+  from { opacity: 0.8; transform: scale(1); }
+  to { opacity: 0; transform: scale(8); }
+}
+@media (pointer: fine) {
+  html.cursor-enabled,
+  html.cursor-enabled * { cursor: none !important; }
+}
+@media (prefers-reduced-motion: reduce), (pointer: coarse) {
+  .custom-cursor-layer { display: none; }
+}
 /* Light mode — data-theme is on <html>, so this selector works correctly */
 html[data-theme="light"] body {
   background: linear-gradient(160deg, #FAF8FF 0%, #F5F0FF 35%, #FFF5FB 70%, #FAF8FF 100%) !important;
@@ -288,6 +352,18 @@ html[data-theme="light"] main {
   background-size: 60px 60px;
   mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 80%);
   -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 80%);
+}
+.interactive-dot-field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.9;
+  mix-blend-mode: screen;
+}
+html[data-theme="light"] .interactive-dot-field {
+  mix-blend-mode: multiply;
+  opacity: 0.72;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
