@@ -1,22 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowUpRight, Menu, X, Sun, Moon } from "lucide-react"
+
 
 const NAV_LINKS = [
   { label: "Features",    href: "#features" },
   { label: "How It Works", href: "#how-it-works" },
-  { label: "Bot Shield",  href: "#shortener" },
-  { label: "Analytics",   href: "#shortener" },
-]
 
-interface MobileNavProps {
-  onGetStarted: () => void
-  theme: string
-  onToggleTheme: () => void
-}
-
-export function MobileNav({ onGetStarted, theme, onToggleTheme }: MobileNavProps) {
   const [open, setOpen] = useState(false)
   const close = () => setOpen(false)
   const isDark = theme === "dark"
@@ -105,6 +95,15 @@ export function MobileNav({ onGetStarted, theme, onToggleTheme }: MobileNavProps
             </button>
 
             {/* Get Started — desktop */}
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className="theme-toggle"
+              aria-label={`Switch to ${isDark ? "light" : "dark"} theme`}
+              title={`Switch to ${isDark ? "light" : "dark"} theme`}
+            >
+              {isDark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
+            </button>
             <button
               onClick={onGetStarted}
               className="hidden md:inline-flex items-center gap-2"
