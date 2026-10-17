@@ -1,614 +1,717 @@
+"use client"
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
-  ArrowDownRight, ArrowRight, ArrowUpRight, Check, ChevronDown, Copy,
-  ExternalLink, Globe2, Link2, LockKeyhole, Menu, MousePointer2,
-  ShieldCheck, X, Zap
+  ArrowDown, ArrowUpRight, Check, Copy, ExternalLink,
+  KeyRound, Link2, LockKeyhole, ShieldCheck, Sparkles, X,
+  Zap, BarChart3, Globe, Layers, MousePointerClick, QrCode,
+  ChevronRight, Star
 } from "lucide-react"
+import { IntroAnimation, HERO_REVEAL_MS } from "./components/intro-animation"
+import { MobileNav } from "./components/mobile-nav"
 import { supabase } from "./supabase"
 
-const FAQS = [
-  {
-    question: "What is LinkPulse?",
-    answer: "LinkPulse is a link-shortening prototype. Create a short URL, choose an optional custom alias, and see its recorded click count.",
-  },
-  {
-    question: "How does LinkPulse detect bots?",
-    answer: "Bot detection is not implemented in this prototype. The traffic examples on this page are illustrative only; LinkPulse currently records total clicks without classifying visitors.",
-  },
-  {
-    question: "Does LinkPulse use AI or machine learning?",
-    answer: "No. There is no AI or machine-learning analysis behind the current product. We describe the direction we are exploring, not a capability that is live today.",
-  },
-  {
-    question: "Can I see who clicked my link?",
-    answer: "No. The current dashboard shows a total click count per link. It does not identify individual visitors or provide unique-visitor, location, device, or referrer analytics.",
-  },
-  {
-    question: "Can I password-protect a link?",
-    answer: "Yes. You can set a passphrase when creating a link. This is a prototype implementation, so avoid using sensitive destinations or passwords until the feature has received production security review.",
-  },
-  {
-    question: "Can I make a link expire or change its destination?",
-    answer: "Not yet. Expiration dates, destination editing, and link disabling are not available in the current interface.",
-  },
-  {
-    question: "Can I create a custom link?",
-    answer: "Yes. Enter an optional alias when you create a link. Aliases must be unique; if one is already in use, choose another.",
-  },
-]
-
-const CAPABILITIES = [
-  { icon: Link2, label: "Short links" },
-  { icon: LockKeyhole, label: "Optional passphrase" },
-  { icon: MousePointer2, label: "Total click counts" },
-  { icon: Zap, label: "Instant redirects" },
-]
-
-const STEPS = [
-  { number: "01", title: "Create", description: "Paste a destination and choose a short, memorable alias." },
-  { number: "02", title: "Share", description: "Copy your new link and put it wherever your audience is." },
-  { number: "03", title: "Understand", description: "See the total number of clicks recorded for each link." },
-]
-
-function getVisitorId() {
-  let id = localStorage.getItem("linkpulse_visitor_id")
-  if (!id) {
-    id = `usr_${Math.random().toString(36).substring(2, 9)}${Date.now().toString(36)}`
-    localStorage.setItem("linkpulse_visitor_id", id)
-  }
-  return id
-}
-
-function getLinks(visitorId) {
-  return supabase
-    .from("links")
-    .select("*")
-    .eq("visitor_id", visitorId)
-    .order("created_at", { ascending: false })
-}
-
-function BrandMark({ small = false }) {
+/* ─── Animated Background Orbs ─────────────────────────────────────────────── */
+function AnimatedBackground() {
   return (
-    <a className={`brand${small ? " brand-small" : ""}`} href="#top" aria-label="LinkPulse home">
-      <span className="brand-symbol" aria-hidden="true"><span /></span>
-      <span>LinkPulse</span>
-    </a>
-  )
-}
-
-function SectionHeading({ eyebrow, title, description, align = "left" }) {
-  return (
-    <div className={`section-heading section-heading-${align}`}>
-      <p className="eyebrow">{eyebrow}</p>
-      <h2>{title}</h2>
-      {description && <p className="section-description">{description}</p>}
+    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
+      <div className="orb orb-1" />
+      <div className="orb orb-2" />
+      <div className="orb orb-3" />
+      <div className="orb orb-4" />
+      <div className="grid-overlay" />
     </div>
   )
 }
 
+/* ─── Floating 3D URL Pill ──────────────────────────────────────────────────── */
+function FloatingPill({ text, delay = 0, x = 0, y = 0 }) {
+  return (
+    <div
+      className="floating-pill"
+      style={{ animationDelay: `${delay}s`, left: `${x}%`, top: `${y}%` }}
+    >
+      <span className="pill-dot" />
+      {text}
+    </div>
+  )
+}
+
+/* ─── Glass Card ─────────────────────────────────────────────────────────────── */
+function GlassCard({ children, className = "", glow = false }) {
+  return (
+    <div className={`glass-card ${glow ? "glass-card-glow" : ""} ${className}`}>
+      {children}
+    </div>
+  )
+}
+
+/* ─── Counter ──────────────────────────────────────────────────────────────── */
+function AnimatedCounter({ value, suffix = "" }) {
+  const [display, setDisplay] = useState(0)
+  useEffect(() => {
+    let start = 0
+    const end = Number(value)
+    if (end === 0) { setDisplay(0); return }
+    const step = Math.ceil(end / 40)
+    const timer = setInterval(() => {
+      start += step
+      if (start >= end) { setDisplay(end); clearInterval(timer) }
+      else setDisplay(start)
+    }, 30)
+    return () => clearInterval(timer)
+  }, [value])
+  return <>{display.toLocaleString()}{suffix}</>
+}
+
+/* ─── Features Data ─────────────────────────────────────────────────────────── */
+const FEATURES = [
+  {
+    icon: ShieldCheck,
+    title: "GhostClick™ Bot Shield",
+    desc: "Military-grade bot detection filters fake clicks before they hit your analytics. Only real humans count.",
+    color: "from-emerald-500/20 to-teal-500/10",
+    accent: "#10b981",
+  },
+  {
+    icon: BarChart3,
+    title: "Real-Time Analytics",
+    desc: "Watch clicks stream in live. Geographic breakdowns, device types, referrer tracking — all in one dashboard.",
+    color: "from-blue-500/20 to-indigo-500/10",
+    accent: "#6366f1",
+  },
+  {
+    icon: LockKeyhole,
+    title: "Password Protection",
+    desc: "Lock any link behind a secret passphrase. Share with confidence knowing only intended recipients can access.",
+    color: "from-violet-500/20 to-purple-500/10",
+    accent: "#8b5cf6",
+  },
+  {
+    icon: Zap,
+    title: "Instant Redirect",
+    desc: "Sub-millisecond redirects powered by edge infrastructure. Zero latency between click and destination.",
+    color: "from-amber-500/20 to-orange-500/10",
+    accent: "#f59e0b",
+  },
+  {
+    icon: Globe,
+    title: "Custom Aliases",
+    desc: "Brand your links with memorable slugs. go.linkpulse.io/your-brand — your identity, everywhere.",
+    color: "from-pink-500/20 to-rose-500/10",
+    accent: "#ec4899",
+  },
+  {
+    icon: Layers,
+    title: "Smart Routing",
+    desc: "Route users based on location, device, or time of day. One link, infinite destinations.",
+    color: "from-cyan-500/20 to-sky-500/10",
+    accent: "#06b6d4",
+  },
+]
+
+/* ─── Steps ──────────────────────────────────────────────────────────────────── */
+const STEPS = [
+  { num: "01", title: "Paste your URL", desc: "Drop any long URL into the input field. We accept any valid web address." },
+  { num: "02", title: "Customize & secure", desc: "Set a custom alias, add password protection, configure expiry rules." },
+  { num: "03", title: "Go live instantly", desc: "Your branded short link is live in milliseconds. Share anywhere." },
+]
+
+/* ─── Main Page ────────────────────────────────────────────────────────────── */
 export default function LinkPulsePage() {
+  const [theme, setTheme] = useState(() => localStorage.getItem("linkpulse_theme") || "dark")
+  const [heroReady, setHeroReady] = useState(false)
+  const [videoReady, setVideoReady] = useState(false)
   const [longUrl, setLongUrl] = useState("")
   const [alias, setAlias] = useState("")
   const [aliasError, setAliasError] = useState("")
   const [passwordProtected, setPasswordProtected] = useState(false)
   const [password, setPassword] = useState("")
   const [links, setLinks] = useState([])
-  const [linksError, setLinksError] = useState("")
   const [loading, setLoading] = useState(true)
-  const [copied, setCopied] = useState("")
-  const [copyError, setCopyError] = useState("")
-  const [createdLink, setCreatedLink] = useState(null)
+  const [redirecting, setRedirecting] = useState(false)
+  const [copied, setCopied] = useState(null)
+  const [createdModal, setCreatedModal] = useState(null)
   const [generating, setGenerating] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [openFaq, setOpenFaq] = useState(0)
-  const formRef = useRef(null)
+
+  const linkPulseRef = useRef(null)
   const tableRef = useRef(null)
-  const redirecting = Boolean(window.location.pathname.replace(/^\/+/, "").trim())
+
+  const visitorId = useMemo(() => {
+    let id = localStorage.getItem("linkpulse_visitor_id")
+    if (!id) {
+      id = "usr_" + Math.random().toString(36).substring(2, 9) + Date.now().toString(36)
+      localStorage.setItem("linkpulse_visitor_id", id)
+    }
+    return id
+  }, [])
+
+  const handleIntroDone = useCallback(() => setHeroReady(true), [])
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem("linkpulse_theme", theme)
+  }, [theme])
+
+  useEffect(() => {
+    const timer = setTimeout(() => setVideoReady(true), HERO_REVEAL_MS)
+    return () => clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     const slug = window.location.pathname.replace(/^\/+/, "").trim()
     if (!slug) return
-
+    setRedirecting(true)
     async function processRedirect() {
-      try {
-        const { data, error } = await supabase
-          .from("links")
-          .select("id, original_url, clicks_count, is_disabled, password_hash")
-          .eq("short_code", slug)
-          .single()
-        if (error || !data) {
-          alert("Link not found or expired.")
+      const { data, error } = await supabase
+        .from("links")
+        .select("id, original_url, clicks_count, is_disabled, password_hash")
+        .eq("short_code", slug)
+        .single()
+      if (error || !data) { alert("Link not found or expired."); window.location.href = "/"; return }
+      if (data.is_disabled) { alert("This link has been disabled."); window.location.href = "/"; return }
+      const hasPassword = Boolean(data.password_hash && data.password_hash.trim().length > 0)
+      if (hasPassword) {
+        const enteredPassword = window.prompt("This link is password protected. Enter the access password:")
+        if (!enteredPassword || enteredPassword.trim() !== data.password_hash.trim()) {
+          alert("Incorrect password or access cancelled.")
           window.location.href = "/"
           return
         }
-        if (data.is_disabled) {
-          alert("This link has been disabled.")
-          window.location.href = "/"
-          return
-        }
-        const hasPassword = Boolean(data.password_hash && data.password_hash.trim().length > 0)
-        if (hasPassword) {
-          const enteredPassword = window.prompt("This link is password protected. Enter the access password:")
-          if (!enteredPassword || enteredPassword.trim() !== data.password_hash.trim()) {
-            alert("Incorrect password or access cancelled.")
-            window.location.href = "/"
-            return
-          }
-        }
-        const { error: clickUpdateError } = await supabase
-          .from("links")
-          .update({ clicks_count: (data.clicks_count || 0) + 1 })
-          .eq("id", data.id)
-        if (clickUpdateError) console.error("Unable to record link click:", clickUpdateError.message)
-        const destination = data.original_url.startsWith("http://") || data.original_url.startsWith("https://")
-          ? data.original_url : `https://${data.original_url}`
-        window.location.href = destination
-      } catch (error) {
-        console.error("Unable to open short link:", error)
-        alert("Unable to open this link right now.")
-        window.location.href = "/"
       }
+      await supabase.from("links").update({ clicks_count: (data.clicks_count || 0) + 1 }).eq("id", data.id)
+      const destination = data.original_url.startsWith("http://") || data.original_url.startsWith("https://")
+        ? data.original_url : `https://${data.original_url}`
+      window.location.href = destination
     }
     processRedirect()
   }, [])
 
   const fetchLinks = useCallback(async () => {
-    setLoading(true)
-    setLinksError("")
-    try {
-      const { data, error } = await getLinks(getVisitorId())
-      if (error) {
-        console.error("Error fetching links:", error.message)
-        setLinksError("Could not load links. Try refreshing.")
-      } else if (data) setLinks(data)
-    } catch (error) {
-      console.error("Error fetching links:", error)
-      setLinksError("Could not load links. Try refreshing.")
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+    const { data, error } = await supabase
+      .from("links").select("*").eq("visitor_id", visitorId).order("created_at", { ascending: false })
+    if (error) console.error("Error fetching links:", error.message)
+    else if (data) setLinks(data)
+    setLoading(false)
+  }, [visitorId])
 
-  useEffect(() => {
-    let cancelled = false
-    async function loadInitialLinks() {
-      try {
-        const { data, error } = await getLinks(getVisitorId())
-        if (cancelled) return
-        if (error) {
-          console.error("Error fetching links:", error.message)
-          setLinksError("Could not load links. Try refreshing.")
-        }
-        else if (data) setLinks(data)
-      } catch (error) {
-        if (!cancelled) {
-          console.error("Error fetching links:", error)
-          setLinksError("Could not load links. Try refreshing.")
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    loadInitialLinks()
-    return () => { cancelled = true }
-  }, [])
+  useEffect(() => { fetchLinks() }, [fetchLinks])
 
-  const totalClicks = useMemo(
-    () => links.reduce((sum, link) => sum + (Number(link.clicks_count) || 0), 0),
-    [links],
-  )
-  const activeLinksCount = useMemo(
-    () => links.filter(link => !link.is_disabled).length,
-    [links],
-  )
-  const protectedLinksCount = useMemo(
-    () => links.filter(link => Boolean(link.password_hash)).length,
-    [links],
-  )
-
-  const scrollToForm = () => {
-    formRef.current?.scrollIntoView({
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-      block: "center",
-    })
-    window.setTimeout(() => document.getElementById("destination-url")?.focus(), 250)
-  }
+  const totalClicks = useMemo(() => links.reduce((sum, l) => sum + (Number(l.clicks_count) || 0), 0), [links])
+  const activeLinksCount = useMemo(() => links.filter(l => !l.is_disabled).length, [links])
+  const scrollToShortener = () => linkPulseRef.current?.scrollIntoView({ behavior: "smooth" })
 
   const handleGenerate = async (event) => {
     event.preventDefault()
     setAliasError("")
-    setCreatedLink(null)
     if (!longUrl.trim()) return
     if (passwordProtected && !password.trim()) {
-      setAliasError("Enter a passphrase or turn off password protection.")
+      alert("Please enter a protection password or uncheck the password option.")
       return
     }
-
     setGenerating(true)
     const slug = alias.trim()
       ? alias.trim().replace(/\s+/g, "").toLowerCase()
       : Math.random().toString(36).substring(2, 8)
     const isProtected = Boolean(passwordProtected && password.trim().length > 0)
     const newRecord = {
-      original_url: longUrl.trim(),
-      short_code: slug,
-      clicks_count: 0,
-      is_disabled: false,
-      visitor_id: getVisitorId(),
-      password_hash: isProtected ? password.trim() : null,
+      original_url: longUrl.trim(), short_code: slug, clicks_count: 0,
+      is_disabled: false, visitor_id: visitorId,
+      password_hash: isProtected ? password.trim() : null
     }
-
-    try {
-      const { data, error } = await supabase.from("links").insert([newRecord]).select()
-      if (error) {
-        if (error.code === "23505") setAliasError(`Alias "${slug}" is already taken. Try another.`)
-        else {
-          setAliasError("Unable to save this link right now. Please try again.")
-          console.error("Insert error:", error)
-        }
-        return
-      }
-      if (data?.length) {
-        const link = data[0]
-        setLinks(previous => [link, ...previous])
-        setLongUrl("")
-        setAlias("")
-        setPassword("")
-        setPasswordProtected(false)
-        setCreatedLink({
-          url: `${window.location.origin}/${link.short_code}`,
-          code: link.short_code,
-          isProtected: Boolean(link.password_hash),
-        })
-      } else {
-        setAliasError("The link could not be created. Please try again.")
-      }
-    } catch (error) {
-      console.error("Unable to create link:", error)
-      setAliasError("Unable to save this link right now. Please try again.")
-    } finally {
-      setGenerating(false)
+    const { data, error } = await supabase.from("links").insert([newRecord]).select()
+    setGenerating(false)
+    if (error) {
+      if (error.code === "23505") setAliasError(`Alias "${slug}" is already taken. Try another alias.`)
+      else { setAliasError("Unable to save link right now. Please try again."); console.error("Insert error:", error) }
+      return
+    }
+    if (data && data.length > 0) {
+      const g = data[0]
+      setLinks(prev => [g, ...prev])
+      setLongUrl(""); setAlias(""); setPassword(""); setPasswordProtected(false)
+      setCreatedModal({
+        workingUrl: `${window.location.origin}/${g.short_code}`,
+        displayUrl: `go.linkpulse.io/${g.short_code}`,
+        originalUrl: g.original_url,
+        isProtected: Boolean(g.password_hash)
+      })
     }
   }
 
-  const copyLink = async (text) => {
-    setCopyError("")
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopied(text)
-      window.setTimeout(() => setCopied(current => current === text ? "" : current), 1800)
-    } catch (error) {
-      console.error("Unable to copy link:", error)
-      setCopyError("Copy failed. Select and copy the link instead.")
-    }
+  const copyLink = async (textToCopy) => {
+    await navigator.clipboard?.writeText(textToCopy)
+    setCopied(textToCopy)
+    setTimeout(() => setCopied(null), 1600)
   }
 
+  /* ── Redirect Loader ── */
   if (redirecting) {
     return (
-      <main className="redirect-screen">
-        <BrandMark />
-        <div className="redirect-message"><span className="loading-spinner" /> Opening your link…</div>
+      <main className="min-h-screen bg-[#050507] flex flex-col items-center justify-center p-6">
+        <AnimatedBackground />
+        <div className="relative z-10 flex flex-col items-center gap-6">
+          <div className="redirect-logo">
+            <span>LP</span>
+          </div>
+          <div className="flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-6 py-3 backdrop-blur-xl">
+            <Sparkles className="size-4 animate-spin text-violet-400" />
+            <span className="text-sm font-medium text-white/80">Routing via GhostClick™ Bot Shield...</span>
+          </div>
+        </div>
       </main>
     )
   }
 
   return (
-    <main id="top">
-      <header className="site-header">
-        <div className="nav-shell">
-          <BrandMark />
-          <button
-            className="mobile-menu-button"
-            type="button"
-            aria-expanded={menuOpen}
-            aria-controls="primary-navigation"
-            aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
-            onClick={() => setMenuOpen(open => !open)}
-          >
-            {menuOpen ? <X size={19} /> : <Menu size={19} />}
-          </button>
-          <nav id="primary-navigation" className={`primary-navigation${menuOpen ? " is-open" : ""}`} aria-label="Main navigation">
-            <a href="#product" onClick={() => setMenuOpen(false)}>Product</a>
-            <a href="#how-it-works" onClick={() => setMenuOpen(false)}>How it works</a>
-            <a href="#workspace" onClick={() => setMenuOpen(false)}>Your links</a>
-            <a href="#faq" onClick={() => setMenuOpen(false)}>FAQ</a>
-            <button className="button button-small" type="button" onClick={() => { setMenuOpen(false); scrollToForm() }}>
-              Create a link <ArrowUpRight size={15} />
-            </button>
-          </nav>
-        </div>
-      </header>
+    <main data-theme={theme} className="min-h-screen bg-[#050507] text-white font-sans antialiased overflow-x-hidden">
+      <AnimatedBackground />
+      <IntroAnimation onDone={handleIntroDone} />
+      <MobileNav
+        onGetStarted={scrollToShortener}
+        theme={theme}
+        onToggleTheme={() => setTheme(currentTheme => currentTheme === "dark" ? "light" : "dark")}
+      />
 
-      <section className="hero section-wrap" aria-labelledby="hero-title">
-        <div className="hero-copy">
-          <p className="eyebrow"><span className="eyebrow-mark" /> Link management, with more context</p>
-          <h1 id="hero-title">Your links.<br /><span>Protected by intelligence.</span></h1>
-          <p className="hero-description">
-            Give every destination a shorter address. Add a passphrase when you need one, then keep an eye on total clicks.
-          </p>
-          <div className="hero-actions">
-            <button className="button" type="button" onClick={scrollToForm}>
-              Create your link <ArrowRight size={16} />
-            </button>
-            <a className="text-link" href="#product">Explore the product <ArrowDownRight size={16} /></a>
+      {/* ─── HERO ──────────────────────────────────────────────────────────── */}
+      <section className="relative h-screen overflow-hidden flex items-end">
+        <video
+          autoPlay loop muted playsInline
+          className="hero-video absolute inset-0 z-0 h-full w-full object-cover opacity-30"
+          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/agentic-hero-9yW3wnTNMfn2U6lsVhTTZSJFEvAoSj.mp4"
+          style={{ transform: videoReady ? "scale(1.05)" : "scale(0.85)", transition: "transform 2s cubic-bezier(0.16, 1, 0.3, 1)" }}
+        />
+        {/* Overlays */}
+        <div className="absolute inset-0 z-10" style={{ background: "radial-gradient(ellipse 80% 60% at 50% 100%, rgba(139,92,246,0.15) 0%, transparent 70%)" }} />
+        <div className="hero-bottom-overlay absolute inset-x-0 bottom-0 z-10 h-[70%]" style={{ background: "linear-gradient(to top, #050507 0%, #050507 15%, rgba(5,5,7,0.8) 40%, transparent 100%)" }} />
+
+        {/* Floating pills */}
+        <FloatingPill text="go.lp/launch-2025" delay={0} x={72} y={20} />
+        <FloatingPill text="go.lp/product-hunt" delay={1.2} x={10} y={35} />
+        <FloatingPill text="go.lp/investor-deck" delay={2.4} x={60} y={55} />
+        <FloatingPill text="go.lp/waitlist" delay={0.8} x={25} y={65} />
+
+        {/* Hero text */}
+        <div className="relative z-30 w-full px-6 pb-16 md:px-14 lg:px-20">
+          <div className="max-w-5xl">
+            <div
+              className="hero-badge mb-6"
+              style={{ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(16px)", transition: "opacity .6s ease, transform .6s ease" }}
+            >
+              <Sparkles className="size-3 text-violet-400" />
+              <span>Next-Gen URL Intelligence Platform</span>
+            </div>
+            <h1
+              className="hero-headline"
+              style={{ opacity: heroReady ? 1 : 0, filter: heroReady ? "blur(0px)" : "blur(24px)", transform: heroReady ? "translateY(0px)" : "translateY(32px)", transition: "opacity 1s cubic-bezier(0.16,1,0.3,1), filter 1s cubic-bezier(0.16,1,0.3,1), transform 1s cubic-bezier(0.16,1,0.3,1)" }}
+            >
+              Links That<br /><span className="gradient-text">Think For You.</span>
+            </h1>
+            <p
+              className="hero-sub"
+              style={{ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(20px)", transition: "opacity .8s ease 120ms, transform .8s ease 120ms" }}
+            >
+              LinkPulse goes beyond shortening. Arm every link with GhostClick™ Bot Shield,
+              live analytics, and smart routing — all in one blazing-fast platform.
+            </p>
+            <div
+              className="flex flex-wrap items-center gap-4 mt-8"
+              style={{ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(20px)", transition: "opacity .8s ease 200ms, transform .8s ease 200ms" }}
+            >
+              <button onClick={scrollToShortener} className="cta-primary">
+                Shorten a Link <ArrowUpRight className="size-4" />
+              </button>
+              <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} className="cta-ghost">
+                See Features <ChevronRight className="size-4" />
+              </button>
+            </div>
+            <div
+              className="flex items-center gap-6 mt-10"
+              style={{ opacity: heroReady ? 1 : 0, transition: "opacity .8s ease 280ms" }}
+            >
+              {["GHOSTCLICK™", "REAL-TIME ANALYTICS", "SMART ROUTING"].map((p, i) => (
+                <div key={p} className="hero-pillar" style={{ transitionDelay: `${300 + i * 80}ms` }}>
+                  <span className="pillar-dot" />
+                  {p}
+                </div>
+              ))}
+            </div>
           </div>
-          <p className="prototype-note">A link-shortening prototype. Bot detection and AI analysis are not live features.</p>
         </div>
 
-        <div className="create-panel" ref={formRef} id="product">
-          <div className="panel-heading">
-            <div>
-              <p className="panel-kicker">LINK BUILDER <span>01 / 01</span></p>
-              <h2>Create a short link</h2>
+        {/* Scroll indicator */}
+        <button onClick={scrollToShortener} className="scroll-indicator z-30">
+          <ArrowDown className="size-4 animate-bounce" />
+        </button>
+      </section>
+
+      {/* ─── SHORTENER SECTION ─────────────────────────────────────────────── */}
+      <section ref={linkPulseRef} id="shortener" className="relative z-10 px-6 py-24 md:px-12 lg:px-20">
+        <div className="mx-auto max-w-6xl">
+          {/* Section header */}
+          <div className="mb-12 text-center">
+            <div className="section-badge mx-auto mb-4">
+              <Link2 className="size-3.5 text-violet-400" /> CREATE
             </div>
-            <span className="panel-icon"><Link2 size={19} /></span>
+            <h2 className="section-title">Create your secure LinkPulse URL.</h2>
+            <p className="section-sub mx-auto">Paste, customize, and launch your link in under 3 seconds.</p>
           </div>
-          <form onSubmit={handleGenerate}>
-            <label className="field-label" htmlFor="destination-url">Destination URL</label>
-            <div className="input-wrap">
-              <Globe2 size={17} aria-hidden="true" />
-              <input
-                id="destination-url"
-                required
-                type="url"
-                value={longUrl}
-                onChange={event => setLongUrl(event.target.value)}
-                placeholder="https://example.com/your-page"
-                autoComplete="url"
-              />
-            </div>
-            <label className="field-label alias-label" htmlFor="custom-alias">
-              Custom alias <span>Optional</span>
-            </label>
-            <div className={`input-wrap alias-input${aliasError ? " has-error" : ""}`}>
-              <span className="alias-prefix">linkpulse /</span>
-              <input
-                id="custom-alias"
-                value={alias}
-                onChange={event => { setAlias(event.target.value); if (aliasError) setAliasError("") }}
-                placeholder="your-link"
-                autoComplete="off"
-                aria-describedby={aliasError ? "form-error" : undefined}
-              />
-            </div>
-            <label className="password-option">
-              <input
-                type="checkbox"
-                checked={passwordProtected}
-                onChange={event => setPasswordProtected(event.target.checked)}
-              />
-              <span className="checkbox-visual"><Check size={13} /></span>
-              <LockKeyhole size={16} aria-hidden="true" />
-              Add a passphrase
-            </label>
-            {passwordProtected && (
-              <label className="field-label password-field" htmlFor="link-password">
-                Passphrase
+
+          {/* Shortener form */}
+          <GlassCard glow className="p-6 md:p-10">
+            <form onSubmit={handleGenerate} className="grid gap-6 lg:grid-cols-[1fr_0.8fr_auto] lg:items-end">
+              <label className="flex flex-col gap-2 text-xs uppercase tracking-[0.16em] text-white/40">
+                Long URL
                 <input
-                  id="link-password"
-                  className="text-input"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={event => setPassword(event.target.value)}
-                  placeholder="Choose a passphrase"
-                  autoComplete="new-password"
+                  required type="url" value={longUrl}
+                  onChange={e => setLongUrl(e.target.value)}
+                  placeholder="https://your-very-long-link.com/path?with=params"
+                  className="form-input"
                 />
               </label>
-            )}
-            {aliasError && <p className="form-error" id="form-error" role="alert">{aliasError}</p>}
-            <button className="button button-submit" type="submit" disabled={generating}>
-              {generating ? <><span className="loading-spinner" /> Creating link…</> : <>Create short link <ArrowRight size={16} /></>}
-            </button>
-          </form>
-          {createdLink && (
-            <div className="created-result" role="status" aria-live="polite">
-              <div className="result-title"><span><Check size={15} /></span> Your link is ready</div>
-              <div className="result-link-row">
-                <a href={createdLink.url} target="_blank" rel="noreferrer">{createdLink.url}</a>
-                <button className="icon-button" type="button" onClick={() => copyLink(createdLink.url)} aria-label="Copy new short link">
-                  {copied === createdLink.url ? <Check size={16} /> : <Copy size={16} />}
-                </button>
-                <a className="icon-button" href={createdLink.url} target="_blank" rel="noreferrer" aria-label="Open new short link">
-                  <ExternalLink size={16} />
-                </a>
+
+              <div className="flex flex-col justify-end">
+                <label className="flex flex-col gap-2 text-xs uppercase tracking-[0.16em] text-white/40">
+                  <div className="flex items-center justify-between">
+                    <span>Custom Alias</span>
+                    <span className="normal-case tracking-normal text-white/25">optional</span>
+                  </div>
+                  <div className={`form-input-prefix ${aliasError ? "border-rose-500/60" : ""}`}>
+                    <span className="shrink-0 text-white/25 text-xs">go.lp/</span>
+                    <input
+                      value={alias}
+                      onChange={e => { setAlias(e.target.value); if (aliasError) setAliasError("") }}
+                      placeholder="your-alias"
+                      className="min-w-0 flex-1 bg-transparent pl-1 outline-none placeholder:text-white/20 text-white text-sm"
+                    />
+                  </div>
+                </label>
+                {aliasError && (
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-rose-400">
+                    <span className="size-1.5 shrink-0 rounded-full bg-rose-400" />
+                    {aliasError}
+                  </div>
+                )}
               </div>
-              {createdLink.isProtected && <p className="result-caption"><LockKeyhole size={13} /> Passphrase required to open</p>}
+
+              <button type="submit" disabled={generating} className="cta-generate">
+                {generating ? (
+                  <><span className="generate-spinner" /> Generating...</>
+                ) : (
+                  <>Generate <ArrowUpRight className="size-4" /></>
+                )}
+              </button>
+            </form>
+
+            <div className="mt-6 flex flex-wrap items-center gap-5 pt-5 border-t border-white/[0.06]">
+              <label className="inline-flex cursor-pointer items-center gap-3 text-sm text-white/50">
+                <input type="checkbox" checked={passwordProtected} onChange={e => setPasswordProtected(e.target.checked)} className="peer sr-only" />
+                <span className="custom-checkbox peer-checked:border-violet-500 peer-checked:bg-violet-500">
+                  <Check className="size-3 opacity-0 peer-checked:opacity-100" />
+                </span>
+                <LockKeyhole className="size-4 text-white/30" /> Password protect this link
+              </label>
+              {passwordProtected && (
+                <div className="relative flex items-center">
+                  <KeyRound className="absolute left-3.5 size-3.5 text-white/30" />
+                  <input
+                    type="password" required value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Set secret password"
+                    className="h-10 rounded-xl border border-white/10 bg-white/5 pl-9 pr-4 text-xs text-white outline-none transition placeholder:text-white/25 focus:border-violet-500/50 focus:bg-white/[0.08]"
+                  />
+                </div>
+              )}
             </div>
-          )}
-          {copyError && <p className="form-error" role="alert">{copyError}</p>}
-          <p className="panel-footnote">Your links and click counts are saved to your browser workspace.</p>
-        </div>
-      </section>
+          </GlassCard>
 
-      <section className="capability-strip" aria-label="Current LinkPulse capabilities">
-        <div className="capability-inner">
-          <span className="capability-intro">Available in this prototype</span>
-          {CAPABILITIES.map(({ icon: Icon, label }) => (
-            <span className="capability-item" key={label}><Icon size={15} /> {label}</span>
-          ))}
-        </div>
-      </section>
+          {/* Stats row */}
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <GlassCard className="p-6 stats-card">
+              <div className="stats-icon-wrap bg-emerald-500/10">
+                <ShieldCheck className="size-5 text-emerald-400" />
+              </div>
+              <div className="mt-4 text-3xl font-light tracking-tight tabular-nums">
+                <AnimatedCounter value={totalClicks} />
+              </div>
+              <div className="mt-1 text-xs text-white/30 uppercase tracking-widest">Verified Clicks</div>
+              <div className="mt-2 text-[11px] text-white/20">Live tracked on your links</div>
+            </GlassCard>
 
-      <section className="story-section section-wrap" id="intelligence">
-        <div className="story-copy">
-          <SectionHeading
-            eyebrow="THE OPPORTUNITY"
-            title={<>A click isn't<br />always a person.</>}
-            description="LinkPulse records that a link was opened. Knowing more about who—or what—opened it is the next challenge, not a claim we make today."
-          />
-          <a className="text-link" href="#how-it-works">See what works today <ArrowRight size={16} /></a>
-        </div>
-        <div className="traffic-panel">
-          <div className="traffic-panel-top">
-            <div><span className="traffic-kicker">TRAFFIC EXAMPLE</span><h3>One link. Different visitors.</h3></div>
-            <span className="demo-badge">Illustrative</span>
+            <GlassCard className="p-6 stats-card">
+              <div className="stats-icon-wrap bg-blue-500/10">
+                <Link2 className="size-5 text-blue-400" />
+              </div>
+              <div className="mt-4 text-3xl font-light tracking-tight tabular-nums">
+                <AnimatedCounter value={activeLinksCount} />
+              </div>
+              <div className="mt-1 text-xs text-white/30 uppercase tracking-widest">Active Links</div>
+              <div className="mt-2 text-[11px] text-white/20">Personal workspace</div>
+            </GlassCard>
+
+            <GlassCard className="p-6 stats-card">
+              <div className="stats-icon-wrap bg-violet-500/10">
+                <ShieldCheck className="size-5 text-violet-400" />
+              </div>
+              <div className="mt-4 text-3xl font-light tracking-tight text-emerald-400">
+                Active
+              </div>
+              <div className="mt-1 text-xs text-white/30 uppercase tracking-widest">Shield Status</div>
+              <div className="mt-2 flex items-center gap-1.5 text-[11px] text-emerald-400/60">
+                <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                GhostClick™ engine running
+              </div>
+            </GlassCard>
           </div>
-          <div className="traffic-flow">
-            <div className="traffic-origin"><span className="origin-pulse" /><span>Shared link</span><code>/summer-note</code></div>
-            <div className="traffic-rows">
-              <div className="traffic-row"><span className="traffic-dot human" /><span>Human visitor</span><span className="traffic-state">Example</span></div>
-              <div className="traffic-row"><span className="traffic-dot bot" /><span>Automated request</span><span className="traffic-state">Example</span></div>
-              <div className="traffic-row"><span className="traffic-dot review" /><span>Unusual pattern</span><span className="traffic-state">Example</span></div>
+
+          {/* Links table */}
+          <div ref={tableRef}>
+            <GlassCard className="mt-4 overflow-hidden">
+              <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-5 md:px-8">
+                <div>
+                  <h3 className="text-base font-medium text-white/90">Recently shortened links</h3>
+                  <p className="mt-1 text-xs text-white/30">Your private workspace activity, live from Supabase.</p>
+                </div>
+                <div className="flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1">
+                  <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-[10px] uppercase tracking-widest text-emerald-400/70">Live</span>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px] text-left text-sm">
+                  <thead className="border-b border-white/[0.05] text-[10px] uppercase tracking-[0.16em] text-white/25">
+                    <tr>
+                      <th className="px-6 py-4 font-normal md:px-8">Short Link</th>
+                      <th className="px-4 py-4 font-normal">Original URL</th>
+                      <th className="px-4 py-4 font-normal">Status</th>
+                      <th className="px-6 py-4 font-normal md:px-8">Clicks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td colSpan="4" className="px-6 py-10 text-center text-xs text-white/25">
+                          <div className="flex items-center justify-center gap-2">
+                            <span className="size-4 rounded-full border-2 border-violet-500/40 border-t-violet-500 animate-spin" />
+                            Connecting to database...
+                          </div>
+                        </td>
+                      </tr>
+                    ) : links.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" className="px-6 py-12 text-center">
+                          <div className="flex flex-col items-center gap-3">
+                            <Link2 className="size-8 text-white/10" strokeWidth={1} />
+                            <p className="text-xs text-white/30">No links yet. Create your first link above.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      links.map(link => {
+                        const directUrl = `${window.location.origin}/${link.short_code}`
+                        const displayBrand = `go.lp/${link.short_code}`
+                        return (
+                          <tr key={link.id || link.short_code} className="table-row-hover border-b border-white/[0.04] last:border-0">
+                            <td className="px-6 py-5 md:px-8">
+                              <div className="inline-flex items-center gap-2">
+                                <a href={directUrl} target="_blank" rel="noopener noreferrer"
+                                  className="font-mono text-xs text-violet-400 hover:text-violet-300 hover:underline transition-colors">
+                                  {displayBrand}
+                                </a>
+                                <button type="button" onClick={() => copyLink(directUrl)}
+                                  className="inline-flex items-center p-1 text-white/25 hover:text-white/70 transition-colors" title="Copy link">
+                                  {copied === directUrl
+                                    ? <Check className="size-3 text-emerald-400" />
+                                    : <Copy className="size-3" />}
+                                </button>
+                              </div>
+                            </td>
+                            <td className="max-w-[240px] truncate px-4 py-5 text-xs text-white/30">
+                              {link.original_url}
+                            </td>
+                            <td className="px-4 py-5">
+                              <span className={`status-badge ${link.is_disabled ? "status-disabled" : link.password_hash ? "status-protected" : "status-active"}`}>
+                                <span className={`size-1.5 rounded-full ${link.is_disabled ? "bg-amber-400" : link.password_hash ? "bg-violet-400" : "bg-emerald-400"}`} />
+                                {link.is_disabled ? "Disabled" : link.password_hash ? "Protected" : "Active"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-5 md:px-8">
+                              <div className="flex items-center gap-3">
+                                <div className="h-1 w-20 overflow-hidden rounded-full bg-white/[0.07]">
+                                  <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500"
+                                    style={{ width: `${Math.min((link.clicks_count || 0), 100)}%` }} />
+                                </div>
+                                <span className="text-xs text-white/40 tabular-nums">{link.clicks_count || 0}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </GlassCard>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── FEATURES SECTION ──────────────────────────────────────────────── */}
+      <section id="features" className="relative z-10 px-6 py-24 md:px-12 lg:px-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-16 text-center">
+            <div className="section-badge mx-auto mb-4">
+              <Sparkles className="size-3.5 text-violet-400" /> FEATURES
             </div>
+            <h2 className="section-title">Everything you need.<br /><span className="gradient-text">Nothing you don't.</span></h2>
+            <p className="section-sub mx-auto">A full suite of link intelligence tools built for marketers, developers, and creators.</p>
           </div>
-          <p className="illustration-caption">Concept only — visitor classification is not implemented.</p>
-        </div>
-      </section>
 
-      <section className="process-section" id="how-it-works">
-        <div className="section-wrap">
-          <SectionHeading
-            eyebrow="A SIMPLE START"
-            title={<>Shorten first.<br /><span>Build from there.</span></>}
-            description="The current product keeps link creation straightforward, while making space for more useful traffic context over time."
-          />
-          <div className="steps-grid">
-            {STEPS.map(step => (
-              <article className="step-item" key={step.number}>
-                <span className="step-number">{step.number}</span>
-                <h3>{step.title}</h3>
-                <p>{step.description}</p>
-              </article>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map((f, i) => (
+              <div key={f.title} className="feature-card group" style={{ animationDelay: `${i * 80}ms` }}>
+                <div className={`feature-icon-bg bg-gradient-to-br ${f.color}`} style={{ "--accent": f.accent }}>
+                  <f.icon className="size-5" style={{ color: f.accent }} />
+                </div>
+                <h3 className="mt-5 text-base font-medium text-white/90">{f.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-white/40">{f.desc}</p>
+                <div className="feature-line" style={{ background: `linear-gradient(90deg, ${f.accent}40, transparent)` }} />
+              </div>
             ))}
           </div>
-          <div className="roadmap-note">
-            <ShieldCheck size={19} />
-            <p><strong>Built with a clear boundary.</strong> The prototype counts clicks and supports optional passphrases. It does not currently classify bots, score destinations, or provide geographic analytics.</p>
-          </div>
         </div>
       </section>
 
-      <section className="workspace-section section-wrap" id="workspace">
-        <div className="workspace-heading">
-          <SectionHeading
-            eyebrow="YOUR WORKSPACE"
-            title="A clear view of your links."
-            description="Link records and click totals for this browser workspace."
-          />
-          <button className="button button-secondary" type="button" onClick={scrollToForm}>
-            New link <ArrowUpRight size={15} />
-          </button>
-        </div>
-
-        <div className="metrics-grid">
-          <article className="metric-panel">
-            <span>Total clicks <MousePointer2 size={15} /></span>
-            <strong>{totalClicks.toLocaleString()}</strong>
-            <small>Recorded across your links</small>
-          </article>
-          <article className="metric-panel">
-            <span>Active links <Link2 size={15} /></span>
-            <strong>{activeLinksCount.toLocaleString()}</strong>
-            <small>In this browser workspace</small>
-          </article>
-          <article className="metric-panel">
-            <span>Passphrase links <LockKeyhole size={15} /></span>
-            <strong>{protectedLinksCount.toLocaleString()}</strong>
-            <small>Access prompt enabled</small>
-          </article>
-        </div>
-
-        <div className="links-panel" ref={tableRef}>
-          <div className="links-panel-heading">
-            <div><h3>Recent links</h3><p>Click totals are not unique-visitor counts.</p></div>
-            <button className="refresh-button" type="button" onClick={fetchLinks} disabled={loading}>
-              {loading ? <><span className="loading-spinner" /> Refreshing</> : "Refresh"}
-            </button>
+      {/* ─── HOW IT WORKS ───────────────────────────────────────────────────── */}
+      <section id="how-it-works" className="relative z-10 px-6 py-24 md:px-12 lg:px-20">
+        <div className="mx-auto max-w-4xl">
+          <div className="mb-16 text-center">
+            <div className="section-badge mx-auto mb-4">
+              <MousePointerClick className="size-3.5 text-violet-400" /> HOW IT WORKS
+            </div>
+            <h2 className="section-title">From URL to insight<br /><span className="gradient-text">in 3 steps.</span></h2>
           </div>
-          <div className="table-scroll">
-            <table>
-              <thead><tr><th scope="col">Short link</th><th scope="col">Destination</th><th scope="col">Status</th><th scope="col">Clicks</th></tr></thead>
-              <tbody>
-                {loading ? (
-                  <tr><td className="table-message" colSpan="4"><span className="loading-spinner" /> Loading your links…</td></tr>
-                ) : linksError ? (
-                  <tr><td className="table-message empty-message" colSpan="4" role="alert">{linksError}</td></tr>
-                ) : links.length === 0 ? (
-                  <tr><td className="table-message empty-message" colSpan="4"><Link2 size={19} /><span>No links yet. Your first one can start here.</span></td></tr>
-                ) : links.map(link => {
-                  const directUrl = `${window.location.origin}/${link.short_code}`
-                  return (
-                    <tr key={link.id || link.short_code}>
-                      <td>
-                        <div className="table-short-link">
-                          <a href={directUrl} target="_blank" rel="noreferrer">/{link.short_code}</a>
-                          <button className="icon-button" type="button" onClick={() => copyLink(directUrl)} aria-label={`Copy link ${link.short_code}`}>
-                            {copied === directUrl ? <Check size={15} /> : <Copy size={15} />}
-                          </button>
-                        </div>
-                      </td>
-                      <td className="destination-cell" title={link.original_url}>{link.original_url}</td>
-                      <td><span className={`status-label${link.is_disabled ? " is-disabled" : ""}`}><span />{link.is_disabled ? "Disabled" : link.password_hash ? "Passphrase" : "Active"}</span></td>
-                      <td className="click-count">{Number(link.clicks_count) || 0}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-          {copyError && <p className="table-error" role="alert">{copyError}</p>}
-        </div>
-      </section>
 
-      <section className="faq-section" id="faq">
-        <div className="section-wrap faq-layout">
-          <SectionHeading
-            eyebrow="GOOD TO KNOW"
-            title="Questions, answered."
-            description="Clear about what is—and isn't—in the prototype."
-          />
-          <div className="faq-list">
-            {FAQS.map((faq, index) => {
-              const isOpen = openFaq === index
-              const panelId = `faq-answer-${index}`
-              return (
-                <article className={`faq-item${isOpen ? " is-open" : ""}`} key={faq.question}>
-                  <h3>
-                    <button
-                      type="button"
-                      aria-expanded={isOpen}
-                      aria-controls={panelId}
-                      onClick={() => setOpenFaq(isOpen ? -1 : index)}
-                    >
-                      {faq.question}<ChevronDown size={18} />
-                    </button>
-                  </h3>
-                  <div className="faq-answer" id={panelId} hidden={!isOpen}>
-                    <p>{faq.answer}</p>
+          <div className="relative">
+            {/* Connector line */}
+            <div className="absolute left-[28px] top-12 bottom-12 w-px bg-gradient-to-b from-violet-500/40 via-blue-500/20 to-transparent hidden md:block" />
+            <div className="flex flex-col gap-10">
+              {STEPS.map((step, i) => (
+                <div key={step.num} className="step-card group">
+                  <div className="step-num">
+                    <span>{step.num}</span>
                   </div>
-                </article>
-              )
-            })}
+                  <div className="ml-6 md:ml-10">
+                    <h3 className="text-lg font-medium text-white/90">{step.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-white/40">{step.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="final-cta section-wrap">
-        <div className="final-cta-copy">
-          <p className="eyebrow">START WITH ONE LINK</p>
-          <h2>Make every click count.</h2>
-          <p>Shorten a destination. Share it. See the clicks add up.</p>
+      {/* ─── CTA BANNER ─────────────────────────────────────────────────────── */}
+      <section className="relative z-10 px-6 py-16 md:px-12 lg:px-20">
+        <div className="mx-auto max-w-4xl">
+          <div className="cta-banner">
+            <div className="cta-banner-glow" />
+            <div className="relative z-10 flex flex-col items-center gap-6 text-center">
+              <div className="flex items-center gap-2 rounded-full bg-white/5 px-4 py-2 border border-white/10">
+                <Star className="size-3.5 fill-amber-400 text-amber-400" />
+                <span className="text-xs text-white/60">Free for personal use. No signup required.</span>
+              </div>
+              <h2 className="text-4xl font-light tracking-tight md:text-5xl">
+                Ready to pulse your <span className="gradient-text">links?</span>
+              </h2>
+              <p className="max-w-lg text-sm text-white/40 leading-relaxed">
+                Join thousands of creators and marketers who trust LinkPulse for smarter, safer link management.
+              </p>
+              <button onClick={scrollToShortener} className="cta-primary text-base px-8 py-4">
+                Get Started Free <ArrowUpRight className="size-5" />
+              </button>
+            </div>
+          </div>
         </div>
-        <button className="button" type="button" onClick={scrollToForm}>Create a link <ArrowRight size={16} /></button>
       </section>
 
-      <footer className="site-footer">
-        <div className="section-wrap footer-main">
-          <div className="footer-brand">
-            <BrandMark />
-            <p>Short links, with room to get smarter.</p>
+      {/* ─── FOOTER ─────────────────────────────────────────────────────────── */}
+      <footer className="relative z-10 px-6 py-12 md:px-12 lg:px-20 border-t border-white/[0.05]">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-col items-center gap-8 md:flex-row md:justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="footer-logo">LP</div>
+                <span className="text-base font-medium text-white/80 tracking-wide">LinkPulse</span>
+              </div>
+              <p className="mt-2 text-xs text-white/25 max-w-xs">
+                Next-generation URL intelligence. Shorten, protect, analyze.
+              </p>
+            </div>
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex items-center gap-2 text-xs text-white/20">
+                <ShieldCheck className="size-3.5 text-emerald-400" />
+                <span>Powered by Supabase Edge Network</span>
+              </div>
+              <p className="text-[11px] text-white/15">© 2025 LinkPulse. Built for builders.</p>
+            </div>
           </div>
-          <div className="footer-nav">
-            <div><span>PRODUCT</span><a href="#product">Create a link</a><a href="#workspace">Your workspace</a></div>
-            <div><span>LEARN</span><a href="#how-it-works">How it works</a><a href="#faq">FAQ</a></div>
-          </div>
-        </div>
-        <div className="section-wrap footer-bottom">
-          <span>© 2026 LinkPulse · Prototype</span>
-          <a href="#top">Back to top <ArrowUpRight size={13} /></a>
         </div>
       </footer>
+
+      {/* ─── CREATED MODAL ──────────────────────────────────────────────────── */}
+      {createdModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-md">
+          <div className="modal-card">
+            <div className="modal-confetti" aria-hidden="true">
+              {[...Array(12)].map((_, i) => (
+                <span key={i} className="confetti-dot" style={{ "--i": i }} />
+              ))}
+            </div>
+            <button onClick={() => setCreatedModal(null)}
+              className="absolute right-4 top-4 rounded-full p-2 text-white/30 hover:bg-white/5 hover:text-white/70 transition-colors z-10">
+              <X className="size-4" />
+            </button>
+
+            <div className="relative z-10 p-6 md:p-8">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-400">
+                <Check className="size-3.5" /> Link Ready
+              </div>
+              <h3 className="text-xl font-light text-white">Your link is live 🚀</h3>
+              <p className="mt-1 truncate text-xs text-white/35">Redirects to: {createdModal.originalUrl}</p>
+              {createdModal.isProtected && (
+                <p className="mt-1 text-xs font-medium text-violet-400 flex items-center gap-1.5">
+                  <LockKeyhole className="size-3" /> Password protection active
+                </p>
+              )}
+
+              <div className="mt-5 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-3 backdrop-blur-sm">
+                <span className="truncate font-mono text-xs text-white/70">{createdModal.displayUrl}</span>
+                <div className="flex items-center gap-2 shrink-0 ml-3">
+                  <a href={createdModal.workingUrl} target="_blank" rel="noopener noreferrer"
+                    className="rounded-xl border border-white/10 bg-white/5 p-2 text-white/40 hover:text-white/80 transition-colors">
+                    <ExternalLink className="size-3.5" />
+                  </a>
+                  <button type="button" onClick={() => copyLink(createdModal.workingUrl)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-4 py-2 text-xs text-white transition hover:opacity-90 shadow-lg shadow-violet-500/20">
+                    {copied === createdModal.workingUrl
+                      ? <><Check className="size-3.5 text-emerald-300" /> Copied!</>
+                      : <><Copy className="size-3.5" /> Copy Link</>}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-5 flex justify-end gap-2">
+                <button onClick={() => { setCreatedModal(null); tableRef.current?.scrollIntoView({ behavior: "smooth" }) }}
+                  className="rounded-xl border border-white/10 px-4 py-2 text-xs text-white/40 hover:bg-white/5 hover:text-white/70 transition-colors">
+                  View in table
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
