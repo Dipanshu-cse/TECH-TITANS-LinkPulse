@@ -3,6 +3,18 @@
 
 @import "tailwindcss";
 
+@property --hero-overlay-left {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(5,5,12,0.85);
+}
+
+@property --hero-overlay-mid {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(5,5,12,0.35);
+}
+
 /* ─── Root Variables ────────────────────────────────────────────────────────── */
 :root {
   --bg: #050507;
@@ -14,6 +26,29 @@
   --violet: #8b5cf6;
   --blue: #6366f1;
   --emerald: #10b981;
+  --hero-overlay-left: rgba(5,5,12,0.85);
+  --hero-overlay-mid: rgba(5,5,12,0.35);
+  --hero-glass-opacity: 0.8;
+  --hero-glass-blend: screen;
+  --hero-glass-filter: saturate(1.2) brightness(1.1);
+  --hero-text-color: #ffffff;
+  --hero-copy-color: rgba(255,255,255,0.72);
+  transition: --hero-overlay-left 300ms ease, --hero-overlay-mid 300ms ease;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #050507;
+  --surface: rgba(255,255,255,0.04);
+  --border: rgba(255,255,255,0.08);
+  --text: #ffffff;
+  --hero-overlay-left: rgba(5,5,12,0.85);
+  --hero-overlay-mid: rgba(5,5,12,0.35);
+  --hero-glass-opacity: 0.8;
+  --hero-glass-blend: screen;
+  --hero-glass-filter: saturate(1.2) brightness(1.1);
+  --hero-text-color: #ffffff;
+  --hero-copy-color: rgba(255,255,255,0.72);
 }
 
 /* ─── Base ──────────────────────────────────────────────────────────────────── */
@@ -28,8 +63,42 @@ body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  transition: background-color 300ms ease, color 300ms ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  width: 150px;
+  height: 40px;
+}
+
+.brand-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.footer-brand-logo {
+  display: block;
+  width: 136px;
+  height: auto;
+}
+
+@media (max-width: 768px) {
+  .brand-logo {
+    width: 136px;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-logo {
+    width: 116px;
+  }
 }
 
 /* ─── Animated Background Orbs ─────────────────────────────────────────────── */
@@ -133,6 +202,10 @@ body {
   user-select: none;
 }
 
+.hero .floating-pill {
+  z-index: 3;
+}
+
 .pill-dot {
   display: inline-block;
   width: 6px;
@@ -149,6 +222,97 @@ body {
 }
 
 /* ─── Hero ──────────────────────────────────────────────────────────────────── */
+.hero {
+  isolation: isolate;
+}
+
+.hero::before,
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.hero::before {
+  background:
+    radial-gradient(ellipse at 75% 40%, rgba(124,58,237,0.35), transparent 52%),
+    radial-gradient(ellipse at 85% 70%, rgba(6,182,212,0.30), transparent 48%);
+  mix-blend-mode: soft-light;
+}
+
+.hero::after {
+  background: linear-gradient(
+    90deg,
+    var(--hero-overlay-left) 0%,
+    var(--hero-overlay-mid) 48%,
+    transparent 100%
+  );
+}
+
+.hero-glass-layer {
+  --parallax-x: 0px;
+  --parallax-y: 0px;
+  pointer-events: none;
+  animation: heroGlassFloat 10s ease-in-out infinite;
+  will-change: transform;
+}
+
+.hero-glass-video {
+  opacity: var(--hero-glass-opacity);
+  mix-blend-mode: var(--hero-glass-blend);
+  filter: var(--hero-glass-filter);
+  transition: opacity 300ms ease, filter 300ms ease;
+}
+
+.hero-bottom-overlay {
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--bg) 0%, var(--bg) 15%, transparent 100%);
+  transition: background 300ms ease;
+}
+
+.hero-content {
+  z-index: 2;
+}
+
+@media (max-width: 1023px) {
+  .floating-pill-hide-tablet {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .hero .floating-pill {
+    display: none;
+  }
+}
+
+@keyframes heroGlassFloat {
+  0%, 100% {
+    transform: translate3d(var(--parallax-x), var(--parallax-y), 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(var(--parallax-x), calc(var(--parallax-y) - 18px), 0) rotate(1.5deg);
+  }
+}
+
+@media (hover: none), (prefers-reduced-motion: reduce) {
+  .hero-glass-layer {
+    animation: none;
+    transform: none;
+  }
+
+  .hero-glass-video {
+    transition: none !important;
+  }
+
+  .floating-pill {
+    animation: none;
+  }
+}
+
 .hero-badge {
   display: inline-flex;
   align-items: center;
@@ -168,8 +332,9 @@ body {
   font-weight: 300;
   line-height: 1.0;
   letter-spacing: -0.03em;
-  color: #ffffff;
+  color: var(--hero-text-color);
   font-family: 'IBM Plex Sans', sans-serif;
+  transition: color 300ms ease;
 }
 
 .gradient-text {
@@ -184,8 +349,9 @@ body {
   max-width: 600px;
   font-size: 1.0625rem;
   line-height: 1.7;
-  color: rgba(255,255,255,0.45);
+  color: var(--hero-copy-color);
   font-weight: 300;
+  transition: color 300ms ease;
 }
 
 .hero-pillar {
@@ -249,19 +415,19 @@ body {
   gap: 8px;
   padding: 14px 24px;
   border-radius: 100px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.6);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
   font-size: 0.875rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 300ms ease, background-color 300ms ease, border-color 300ms ease, transform 0.2s ease;
   backdrop-filter: blur(8px);
 }
 
 .cta-ghost:hover {
-  background: rgba(255,255,255,0.08);
-  border-color: rgba(255,255,255,0.18);
-  color: rgba(255,255,255,0.85);
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--text);
 }
 
 .cta-generate {
@@ -574,19 +740,110 @@ body {
   pointer-events: none;
 }
 
-/* ─── Footer Logo ───────────────────────────────────────────────────────────── */
-.footer-logo {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* ─── FAQ ──────────────────────────────────────────────────────────────────── */
+.faq-layout {
+  align-items: start;
+}
+
+.faq-eyebrow {
+  margin: 0 0 18px;
+  color: rgba(167,139,250,0.8);
   font-size: 11px;
-  font-weight: 600;
-  color: white;
-  letter-spacing: 0.05em;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+}
+
+.faq-title {
+  max-width: 440px;
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 300;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+}
+
+.faq-intro {
+  max-width: 360px;
+  margin: 20px 0 0;
+  color: rgba(255,255,255,0.4);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.faq-list {
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.faq-item {
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.faq-question-heading {
+  margin: 0;
+}
+
+.faq-question {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 0;
+  border: 0;
+  background: transparent;
+  color: rgba(255,255,255,0.86);
+  cursor: pointer;
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+}
+
+.faq-question:hover {
+  color: #ffffff;
+}
+
+.faq-question:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 4px;
+}
+
+.faq-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: rgba(167,139,250,0.9);
+  stroke-width: 1.5;
+}
+
+.faq-answer {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 240ms ease, opacity 180ms ease;
+}
+
+.faq-answer.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.faq-answer-inner {
+  overflow: hidden;
+}
+
+.faq-answer p {
+  margin: 0;
+  padding: 0 32px 22px 0;
+  color: rgba(255,255,255,0.48);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .faq-answer {
+    transition: none;
+  }
 }
 
 /* ─── Redirect Logo ─────────────────────────────────────────────────────────── */
@@ -718,6 +975,18 @@ body {
   --border-strong: rgba(37,34,55,0.16);
   --text: #29263a;
   --muted: rgba(41,38,58,0.62);
+  --hero-overlay-left: rgba(250,248,255,0.92);
+  --hero-overlay-mid: rgba(250,248,255,0.32);
+  --hero-glass-opacity: 0.9;
+  --hero-glass-blend: multiply;
+  --hero-glass-filter: saturate(1.4) contrast(1.1);
+  --hero-text-color: #252238;
+  --hero-copy-color: #4b4560;
+}
+
+[data-theme="light"] body,
+main[data-theme] {
+  transition: background-color 300ms ease, color 300ms ease;
 }
 
 [data-theme="light"] body { background-color: var(--bg); color: var(--text); }
@@ -727,16 +996,23 @@ body {
   color: #29263a;
 }
 
-[data-theme="light"] .hero-video { opacity: 0.08; }
-
-[data-theme="light"] .hero-bottom-overlay {
-  background: linear-gradient(to top, #f7f6fb 0%, #f7f6fb 15%, rgba(247,246,251,0.82) 45%, transparent 100%) !important;
-}
-
 [data-theme="light"] .hero-headline,
-[data-theme="light"] .section-title { color: #252238; }
+[data-theme="light"] .section-title,
+[data-theme="light"] .faq-title { color: #252238; }
 
-[data-theme="light"] .hero-sub,
+[data-theme="light"] .faq-list,
+[data-theme="light"] .faq-item { border-color: rgba(37,34,55,0.12); }
+
+[data-theme="light"] .faq-question { color: #29263a; }
+
+[data-theme="light"] .faq-question:hover { color: #6350a4; }
+
+[data-theme="light"] .faq-intro { color: rgba(41,38,58,0.58); }
+
+[data-theme="light"] .faq-answer p { color: rgba(41,38,58,0.68); }
+
+[data-theme="light"] .hero-sub { color: var(--hero-copy-color); }
+
 [data-theme="light"] .section-sub { color: rgba(41,38,58,0.62); }
 
 [data-theme="light"] .hero-badge,

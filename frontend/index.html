@@ -2,6 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      const savedTheme = localStorage.getItem("linkpulse_theme");
+      const initialTheme = savedTheme === "dark" || savedTheme === "light"
+        ? savedTheme
+        : window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      document.documentElement.dataset.theme = initialTheme;
+    </script>
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     

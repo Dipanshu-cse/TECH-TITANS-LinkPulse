@@ -2,10 +2,13 @@
 
 import { useState } from "react"
 import { ArrowUpRight, Menu, Moon, Sun, X } from "lucide-react"
+import darkThemeLogo from "../assets/linkpulse-logo.png"
+import lightThemeLogo from "../assets/linkpulse-logo-light.png"
 
 const NAV_LINKS = [
   { label: "Features", href: "#features" },
   { label: "How It Works", href: "#how-it-works" },
+  { label: "FAQ", href: "#faq" },
   { label: "Bot Shield", href: "#shortener" },
   { label: "Analytics", href: "#shortener" },
 ]
@@ -41,23 +44,8 @@ export function MobileNav({
           }}
         >
           {/* Logo */}
-          <div className="flex items-center gap-2.5">
-            <div style={{
-              width: 28, height: 28,
-              borderRadius: 8,
-              background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 9, fontWeight: 700, color: "white", letterSpacing: "0.05em",
-              flexShrink: 0,
-            }}>
-              LP
-            </div>
-            <span style={{
-              fontSize: 13, fontWeight: 500, letterSpacing: "0.04em",
-              color: isDark ? "rgba(255,255,255,0.75)" : "#29263a",
-            }}>
-              LinkPulse
-            </span>
+          <div className="brand-logo">
+            <img src={theme === "dark" ? darkThemeLogo : lightThemeLogo} alt="LinkPulse" />
           </div>
 
           {/* Desktop links */}
