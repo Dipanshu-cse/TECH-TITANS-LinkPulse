@@ -1,1080 +1,184 @@
-"use client"
+// ─── App.jsx ─────────────────────────────────────────────────────────────────
+// Ye poori application ka main entry point hai.
+// Iska kaam sirf yahi hai: saare pieces ko ek saath joorna.
+//
+// Kya hota hai yahan:
+//   1. useTheme hook se theme (dark/light) manage hoti hai
+//   2. useLinkManager hook se saari database logic aur form state manage hoti hai
+//   3. Intro animation hoti hai — jab wo khatam ho tab hero section visible hota hai
+//   4. Redirect check hota hai — agar URL mein koi slug hai to redirect loader dikhao
+//   5. Saare sections ko render karo (HeroSection, ShortenerSection, etc.)
+//
+// ── File Structure ka Map (kaun kya karta hai) ────────────────────────────────
+//  src/
+//  ├── App.jsx                     ← YE FILE — sab kuch jodata hai
+//  ├── main.jsx                    — React app ko DOM mein mount karta hai
+//  ├── index.css                   — saari CSS (themes, components, animations)
+//  ├── App.css                     — (ignore karo, purani Vite boilerplate hai)
+//  ├── supabase.js                 — Supabase database connection
+//  ├── hooks/
+//  │   ├── useTheme.js             — dark/light theme logic
+//  │   └── useLinkManager.js       — saari database aur link form logic
+//  ├── components/
+//  │   ├── intro-animation.jsx     — page load pe hone wali intro animation
+//  │   ├── mobile-nav.jsx          — mobile navigation bar
+//  │   ├── ui-custom/
+//  │   │   ├── AnimatedBackground.jsx — page ke peeche wala animated background
+//  │   │   ├── CustomCursor.jsx       — glowing custom mouse cursor
+//  │   │   ├── GlassCard.jsx          — reusable transparent card component
+//  │   │   ├── FloatingPill.jsx       — hero mein floating URL badges
+//  │   │   └── AnimatedCounter.jsx    — numbers smoothly count up karta hai
+//  │   └── sections/
+//  │       ├── HeroSection.jsx        — pehla bada hero section
+//  │       ├── ShortenerSection.jsx   — URL shortener form + stats + table
+//  │       ├── FeaturesSection.jsx    — 6 features ki grid
+//  │       ├── HowItWorksSection.jsx  — 3 steps
+//  │       ├── FAQSection.jsx         — accordion FAQs
+//  │       ├── CTABanner.jsx          — "Get Started Free" banner
+//  │       ├── Footer.jsx             — page ka footer
+//  │       ├── CreatedModal.jsx       — link successfully create hone ka modal
+//  │       └── RedirectLoader.jsx     — redirect hone ka loading screen
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import {
-  ArrowDown, ArrowUpRight, Check, Copy, ExternalLink,
-  KeyRound, Link2, LockKeyhole, ShieldCheck, Sparkles, X,
-  Zap, BarChart3, Globe, Layers, MousePointerClick,
-  ChevronRight, Star, Minus, Plus
-} from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { IntroAnimation, HERO_REVEAL_MS } from "./components/intro-animation"
 import { MobileNav } from "./components/mobile-nav"
-import darkThemeLogo from "./assets/linkpulse-logo.png"
-import lightThemeLogo from "./assets/linkpulse-logo-light.png"
-import { supabase } from "./supabase"
 
-/* ─── Animated Background Orbs ─────────────────────────────────────────────── */
-function AnimatedBackground() {
-  const canvasRef = useRef(null)
+// ── Custom Hooks ──────────────────────────────────────────────────────────────
+import { useTheme } from "./hooks/useTheme"
+import { useLinkManager } from "./hooks/useLinkManager"
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return undefined
-    const context = canvas.getContext("2d")
-    if (!context) return undefined
+// ── Utility Components ────────────────────────────────────────────────────────
+import AnimatedBackground from "./components/ui-custom/AnimatedBackground"
+import CustomCursor from "./components/ui-custom/CustomCursor"
 
-    const pointer = { x: -1000, y: -1000, active: false }
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    let width = 0
-    let height = 0
-    let dots = []
-    let animationFrame
+// ── Page Sections ─────────────────────────────────────────────────────────────
+import HeroSection from "./components/sections/HeroSection"
+import ShortenerSection from "./components/sections/ShortenerSection"
+import FeaturesSection from "./components/sections/FeaturesSection"
+import HowItWorksSection from "./components/sections/HowItWorksSection"
+import FAQSection from "./components/sections/FAQSection"
+import CTABanner from "./components/sections/CTABanner"
+import Footer from "./components/sections/Footer"
+import CreatedModal from "./components/sections/CreatedModal"
+import RedirectLoader from "./components/sections/RedirectLoader"
 
-    const resize = () => {
-      const ratio = Math.min(window.devicePixelRatio || 1, 1.5)
-      width = window.innerWidth
-      height = window.innerHeight
-      canvas.width = width * ratio
-      canvas.height = height * ratio
-      canvas.style.width = `${width}px`
-      canvas.style.height = `${height}px`
-      context.setTransform(ratio, 0, 0, ratio, 0, 0)
-      dots = []
-      const spacing = width < 700 ? 34 : 28
-      for (let y = spacing / 2; y < height + spacing; y += spacing) {
-        for (let x = spacing / 2; x < width + spacing; x += spacing) {
-          dots.push({ x, y, phase: Math.random() * Math.PI * 2 })
-        }
-      }
-    }
-
-    const draw = (time = 0) => {
-      const dark = document.documentElement.dataset.theme !== "light"
-      context.clearRect(0, 0, width, height)
-      const motionTime = reduceMotion ? 0 : time * 0.0007
-      const influenceRadius = 190
-      const activeDots = []
-
-      dots.forEach((dot) => {
-        const driftX = Math.sin(motionTime + dot.phase) * 2
-        const driftY = Math.cos(motionTime * 0.8 + dot.phase) * 2
-        const x = dot.x + driftX
-        const y = dot.y + driftY
-        const distance = Math.hypot(pointer.x - x, pointer.y - y)
-        const influence = pointer.active ? Math.max(0, 1 - distance / influenceRadius) : 0
-        const wave = Math.sin(motionTime * 2 + dot.phase) * 0.12
-        const radius = 1.1 + influence * 2.8
-        const alpha = (dark ? 0.12 : 0.09) + influence * 0.7 + wave
-
-        context.beginPath()
-        context.arc(x, y, radius, 0, Math.PI * 2)
-        context.fillStyle = dark
-          ? `rgba(112, 211, 255, ${Math.max(0.04, alpha)})`
-          : `rgba(109, 40, 217, ${Math.max(0.035, alpha * 0.72)})`
-        context.fill()
-        if (influence > 0.55) activeDots.push({ x, y, influence })
-      })
-
-      context.lineWidth = 0.6
-      activeDots.forEach((dot, index) => {
-        activeDots.slice(index + 1).forEach((next) => {
-          const distance = Math.hypot(dot.x - next.x, dot.y - next.y)
-          if (distance < 58) {
-            context.beginPath()
-            context.moveTo(dot.x, dot.y)
-            context.lineTo(next.x, next.y)
-            context.strokeStyle = dark
-              ? `rgba(99, 202, 255, ${0.16 * dot.influence})`
-              : `rgba(124, 58, 237, ${0.10 * dot.influence})`
-            context.stroke()
-          }
-        })
-      })
-
-      if (pointer.active) {
-        const glow = context.createRadialGradient(pointer.x, pointer.y, 0, pointer.x, pointer.y, 210)
-        glow.addColorStop(0, dark ? "rgba(63, 190, 255, 0.12)" : "rgba(139, 92, 246, 0.09)")
-        glow.addColorStop(0.45, dark ? "rgba(63, 190, 255, 0.035)" : "rgba(139, 92, 246, 0.025)")
-        glow.addColorStop(1, "rgba(0, 0, 0, 0)")
-        context.fillStyle = glow
-        context.fillRect(pointer.x - 210, pointer.y - 210, 420, 420)
-      }
-
-      if (!reduceMotion) animationFrame = requestAnimationFrame(draw)
-    }
-
-    const movePointer = (event) => {
-      pointer.x = event.clientX
-      pointer.y = event.clientY
-      pointer.active = true
-    }
-    const leavePointer = () => { pointer.active = false }
-
-    resize()
-    draw()
-    window.addEventListener("resize", resize)
-    window.addEventListener("pointermove", movePointer, { passive: true })
-    window.addEventListener("pointerleave", leavePointer)
-
-    return () => {
-      window.removeEventListener("resize", resize)
-      window.removeEventListener("pointermove", movePointer)
-      window.removeEventListener("pointerleave", leavePointer)
-      if (animationFrame) cancelAnimationFrame(animationFrame)
-    }
-  }, [])
-
-  return (
-    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
-      <div className="orb orb-1" />
-      <div className="orb orb-2" />
-      <div className="orb orb-3" />
-      <div className="orb orb-4" />
-      <div className="grid-overlay" />
-      <canvas ref={canvasRef} className="interactive-dot-field" />
-    </div>
-  )
-}
-
-/* ─── Floating 3D URL Pill ──────────────────────────────────────────────────── */
-function FloatingPill({ text, delay = 0, x = 0, y = 0, className = "" }) {
-  return (
-    <div
-      className={`floating-pill ${className}`}
-      style={{ animationDelay: `${delay}s`, left: `${x}%`, top: `${y}%` }}
-    >
-      <span className="pill-dot" />
-      {text}
-    </div>
-  )
-}
-
-function getInitialTheme() {
-  const savedTheme = localStorage.getItem("lp_theme") || localStorage.getItem("linkpulse_theme")
-  if (savedTheme === "dark" || savedTheme === "light") return savedTheme
-  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"
-}
-
-/* ─── Glass Card ─────────────────────────────────────────────────────────────── */
-function GlassCard({ children, className = "", glow = false }) {
-  return (
-    <div className={`glass-card ${glow ? "glass-card-glow" : ""} ${className}`}>
-      {children}
-    </div>
-  )
-}
-
-/* ─── Desktop Cursor Experience ───────────────────────────────────────────── */
-function CustomCursor() {
-  const cursorRef = useRef(null)
-  const trailRef = useRef(null)
-  const positionRef = useRef({ x: -100, y: -100 })
-  const previousPositionRef = useRef({ x: -100, y: -100 })
-  const velocityRef = useRef({ x: 0, y: 0 })
-  const frameRef = useRef(null)
-  const [isVisible, setIsVisible] = useState(false)
-  const [isInteractive, setIsInteractive] = useState(false)
-  const [rippleId, setRippleId] = useState(0)
-  const [ripplePosition, setRipplePosition] = useState({ x: 0, y: 0 })
-
-  useEffect(() => {
-    const finePointer = window.matchMedia("(pointer: fine)")
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)")
-    if (!finePointer.matches || reducedMotion.matches) return undefined
-
-    document.documentElement.classList.add("cursor-enabled")
-
-    const render = () => {
-      const { x, y } = positionRef.current
-      const velocity = velocityRef.current
-      velocity.x *= 0.84
-      velocity.y *= 0.84
-      const speed = Math.hypot(velocity.x, velocity.y)
-      const trailLength = Math.min(12 + speed * 4.2, 180)
-      const angle = Math.atan2(velocity.y, velocity.x) * (180 / Math.PI)
-
-      if (cursorRef.current) cursorRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`
-      if (trailRef.current) {
-        trailRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${angle}deg) scaleX(${trailLength / 180})`
-        trailRef.current.style.opacity = `${Math.min(0.4 + speed / 20, 0.95)}`
-      }
-      frameRef.current = requestAnimationFrame(render)
-    }
-
-    const handleMove = (event) => {
-      const previous = previousPositionRef.current
-      velocityRef.current = {
-        x: event.clientX - previous.x,
-        y: event.clientY - previous.y
-      }
-      previousPositionRef.current = { x: event.clientX, y: event.clientY }
-      positionRef.current = { x: event.clientX, y: event.clientY }
-      setIsVisible(true)
-      const target = event.target instanceof Element
-        ? event.target.closest("button, a, input, textarea, select, [data-cursor]")
-        : null
-      setIsInteractive(Boolean(target))
-    }
-    const handleLeave = () => setIsVisible(false)
-    const handleEnter = () => setIsVisible(true)
-    const handleDown = (event) => {
-      positionRef.current = { x: event.clientX, y: event.clientY }
-      setRipplePosition({ x: event.clientX, y: event.clientY })
-      setRippleId(id => id + 1)
-    }
-
-    window.addEventListener("pointermove", handleMove, { passive: true })
-    window.addEventListener("pointerleave", handleLeave)
-    window.addEventListener("pointerenter", handleEnter)
-    window.addEventListener("pointerdown", handleDown, { passive: true })
-    frameRef.current = requestAnimationFrame(render)
-
-    return () => {
-      document.documentElement.classList.remove("cursor-enabled")
-      window.removeEventListener("pointermove", handleMove)
-      window.removeEventListener("pointerleave", handleLeave)
-      window.removeEventListener("pointerenter", handleEnter)
-      window.removeEventListener("pointerdown", handleDown)
-      if (frameRef.current) cancelAnimationFrame(frameRef.current)
-    }
-  }, [])
-
-  return (
-    <div className={`custom-cursor-layer ${isVisible ? "is-visible" : ""} ${isInteractive ? "is-interactive" : ""}`} aria-hidden="true">
-      <span ref={trailRef} className="cursor-trail" />
-      <span ref={cursorRef} className="cursor-core" />
-      {rippleId > 0 && (
-        <span
-          key={rippleId}
-          className="cursor-ripple"
-          style={{ left: ripplePosition.x, top: ripplePosition.y }}
-        />
-      )}
-    </div>
-  )
-}
-
-/* ─── Counter ──────────────────────────────────────────────────────────────── */
-function AnimatedCounter({ value, suffix = "" }) {
-  const [display, setDisplay] = useState(0)
-  useEffect(() => {
-    let start = 0
-    const end = Number(value)
-    if (end === 0) {
-      const timer = setTimeout(() => setDisplay(0), 0)
-      return () => clearTimeout(timer)
-    }
-    const step = Math.ceil(end / 40)
-    const timer = setInterval(() => {
-      start += step
-      if (start >= end) { setDisplay(end); clearInterval(timer) }
-      else setDisplay(start)
-    }, 30)
-    return () => clearInterval(timer)
-  }, [value])
-  return <>{display.toLocaleString()}{suffix}</>
-}
-
-/* ─── Features Data ─────────────────────────────────────────────────────────── */
-const FEATURES = [
-  {
-    icon: ShieldCheck,
-    title: "GhostClick™ Bot Shield",
-    desc: "Military-grade bot detection filters fake clicks before they hit your analytics. Only real humans count.",
-    color: "from-emerald-500/20 to-teal-500/10",
-    accent: "#10b981",
-  },
-  {
-    icon: BarChart3,
-    title: "Real-Time Analytics",
-    desc: "Watch clicks stream in live. Geographic breakdowns, device types, referrer tracking — all in one dashboard.",
-    color: "from-blue-500/20 to-indigo-500/10",
-    accent: "#6366f1",
-  },
-  {
-    icon: LockKeyhole,
-    title: "Password Protection",
-    desc: "Lock any link behind a secret passphrase. Share with confidence knowing only intended recipients can access.",
-    color: "from-violet-500/20 to-purple-500/10",
-    accent: "#8b5cf6",
-  },
-  {
-    icon: Zap,
-    title: "Instant Redirect",
-    desc: "Sub-millisecond redirects powered by edge infrastructure. Zero latency between click and destination.",
-    color: "from-amber-500/20 to-orange-500/10",
-    accent: "#f59e0b",
-  },
-  {
-    icon: Globe,
-    title: "Custom Aliases",
-    desc: "Brand your links with memorable slugs. go.linkpulse.io/your-brand — your identity, everywhere.",
-    color: "from-pink-500/20 to-rose-500/10",
-    accent: "#ec4899",
-  },
-  {
-    icon: Layers,
-    title: "Smart Routing",
-    desc: "Route users based on location, device, or time of day. One link, infinite destinations.",
-    color: "from-cyan-500/20 to-sky-500/10",
-    accent: "#06b6d4",
-  },
-]
-
-/* ─── Steps ──────────────────────────────────────────────────────────────────── */
-const STEPS = [
-  { num: "01", title: "Paste your URL", desc: "Drop any long URL into the input field. We accept any valid web address." },
-  { num: "02", title: "Customize & secure", desc: "Set a custom alias, add password protection, configure expiry rules." },
-  { num: "03", title: "Go live instantly", desc: "Your branded short link is live in milliseconds. Share anywhere." },
-]
-
-const FAQS = [
-  {
-    question: "What is LinkPulse?",
-    answer: "LinkPulse turns long URLs into short links. You can customize a link with an alias, protect it with a password, and track its clicks.",
-  },
-  {
-    question: "Is LinkPulse free?",
-    answer: "LinkPulse is currently described as free for personal use, with no sign-up required.",
-  },
-  {
-    question: "What is GhostClick™?",
-    answer: "GhostClick™ is LinkPulse's bot-shield feature. It filters fake clicks so your click counts focus on real visitors.",
-  },
-  {
-    question: "Can I password-protect a link?",
-    answer: "Yes. Enable password protection when creating your link and choose a password. Visitors must enter it correctly to continue to the destination.",
-  },
-  {
-    question: "Can I create a custom alias?",
-    answer: "Yes. Enter an alias when creating your link. If it is already taken, LinkPulse will let you know so you can try another.",
-  },
-]
-
-/* ─── Main Page ────────────────────────────────────────────────────────────── */
 export default function LinkPulsePage() {
-  const [theme, setTheme] = useState(getInitialTheme)
-  const [openFaq, setOpenFaq] = useState(null)
+  // ── Theme hook — dark/light mode manage karta hai ────────────────────────
+  const { theme, toggleTheme } = useTheme()
+
+  // ── Link Manager hook — database + form logic ────────────────────────────
+  const linkManager = useLinkManager()
+
+  // ── Intro Animation State ─────────────────────────────────────────────────
+  // heroReady = intro animation khatam hua? (tab hero text dikhao)
   const [heroReady, setHeroReady] = useState(false)
-  const [videoReady, setVideoReady] = useState(false)
-  const [longUrl, setLongUrl] = useState("")
-  const [alias, setAlias] = useState("")
-  const [aliasError, setAliasError] = useState("")
-  const [passwordProtected, setPasswordProtected] = useState(false)
-  const [password, setPassword] = useState("")
-  const [links, setLinks] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [redirecting, setRedirecting] = useState(false)
-  const [copied, setCopied] = useState(null)
-  const [createdModal, setCreatedModal] = useState(null)
-  const [generating, setGenerating] = useState(false)
-
-  // Apply theme to <html> so CSS variables work globally (body, fixed elements, etc.)
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme)
-  }, [theme])
-
-  const toggleTheme = useCallback(() => {
-    setTheme(t => {
-      const next = t === "dark" ? "light" : "dark"
-      localStorage.setItem("lp_theme", next)
-      return next
-    })
-  }, [])
-
-  const linkPulseRef = useRef(null)
-  const tableRef = useRef(null)
-  const heroRef = useRef(null)
-  const heroGlassRef = useRef(null)
-  const heroParallaxFrame = useRef(null)
-
-  const visitorId = useMemo(() => {
-    let id = localStorage.getItem("linkpulse_visitor_id")
-    if (!id) {
-      // eslint-disable-next-line react-hooks/purity
-      id = "usr_" + Math.random().toString(36).substring(2, 9) + Date.now().toString(36)
-      localStorage.setItem("linkpulse_visitor_id", id)
-    }
-    return id
-  }, [])
-
   const handleIntroDone = useCallback(() => setHeroReady(true), [])
 
-  const handleHeroPointerMove = (event) => {
-    if (
-      window.matchMedia("(hover: none)").matches ||
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) return
-
-    const bounds = heroRef.current?.getBoundingClientRect()
-    if (!bounds) return
-
-    const x = ((event.clientX - bounds.left) / bounds.width - 0.5) * 40
-    const y = ((event.clientY - bounds.top) / bounds.height - 0.5) * 40
-    cancelAnimationFrame(heroParallaxFrame.current)
-    heroParallaxFrame.current = requestAnimationFrame(() => {
-      heroGlassRef.current?.style.setProperty("--parallax-x", `${x}px`)
-      heroGlassRef.current?.style.setProperty("--parallax-y", `${y}px`)
-    })
-  }
-
-  const resetHeroParallax = () => {
-    cancelAnimationFrame(heroParallaxFrame.current)
-    heroParallaxFrame.current = requestAnimationFrame(() => {
-      heroGlassRef.current?.style.setProperty("--parallax-x", "0px")
-      heroGlassRef.current?.style.setProperty("--parallax-y", "0px")
-    })
-  }
-
-  useEffect(() => () => cancelAnimationFrame(heroParallaxFrame.current), [])
-
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme
-    localStorage.setItem("linkpulse_theme", theme)
-  }, [theme])
-
+  // videoReady = kya hero background video zoom-in shuru kare?
+  // HERO_REVEAL_MS ke baad video scale up hoti hai
+  const [videoReady, setVideoReady] = useState(false)
   useEffect(() => {
     const timer = setTimeout(() => setVideoReady(true), HERO_REVEAL_MS)
     return () => clearTimeout(timer)
   }, [])
 
-  useEffect(() => {
-    const slug = window.location.pathname.replace(/^\/+/, "").trim()
-    if (!slug) return
-    // Redirect lookup begins from the current URL and intentionally switches to its loader state.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRedirecting(true)
-    async function processRedirect() {
-      const { data, error } = await supabase
-        .from("links")
-        .select("id, original_url, clicks_count, is_disabled, password_hash")
-        .eq("short_code", slug)
-        .single()
-      if (error || !data) { alert("Link not found or expired."); window.location.href = "/"; return }
-      if (data.is_disabled) { alert("This link has been disabled."); window.location.href = "/"; return }
-      const hasPassword = Boolean(data.password_hash && data.password_hash.trim().length > 0)
-      if (hasPassword) {
-        const enteredPassword = window.prompt("This link is password protected. Enter the access password:")
-        if (!enteredPassword || enteredPassword.trim() !== data.password_hash.trim()) {
-          alert("Incorrect password or access cancelled.")
-          window.location.href = "/"
-          return
-        }
-      }
-      await supabase.from("links").update({ clicks_count: (data.clicks_count || 0) + 1 }).eq("id", data.id)
-      const destination = data.original_url.startsWith("http://") || data.original_url.startsWith("https://")
-        ? data.original_url : `https://${data.original_url}`
-      window.location.href = destination
-    }
-    processRedirect()
-  }, [])
+  // ── FAQ State ─────────────────────────────────────────────────────────────
+  // openFaq = kaunsa FAQ accordion item open hai (index number ya null)
+  const [openFaq, setOpenFaq] = useState(null)
 
-  const fetchLinks = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("links").select("*").eq("visitor_id", visitorId).order("created_at", { ascending: false })
-    if (error) console.error("Error fetching links:", error.message)
-    else if (data) setLinks(data)
-    setLoading(false)
-  }, [visitorId])
+  // ── Scroll Refs ───────────────────────────────────────────────────────────
+  // Shortener section pe smooth scroll karne ke liye
+  const shortenerRef = useRef(null)
+  const scrollToShortener = () => shortenerRef.current?.scrollIntoView({ behavior: "smooth" })
+  const scrollToFeatures = () => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { fetchLinks() }, [fetchLinks])
-
-  const totalClicks = useMemo(() => links.reduce((sum, l) => sum + (Number(l.clicks_count) || 0), 0), [links])
-  const activeLinksCount = useMemo(() => links.filter(l => !l.is_disabled).length, [links])
-  const scrollToShortener = () => linkPulseRef.current?.scrollIntoView({ behavior: "smooth" })
-
-  const handleGenerate = async (event) => {
-    event.preventDefault()
-    setAliasError("")
-    if (!longUrl.trim()) return
-    if (passwordProtected && !password.trim()) {
-      alert("Please enter a protection password or uncheck the password option.")
-      return
-    }
-    setGenerating(true)
-    const slug = alias.trim()
-      ? alias.trim().replace(/\s+/g, "").toLowerCase()
-      : Math.random().toString(36).substring(2, 8)
-    const isProtected = Boolean(passwordProtected && password.trim().length > 0)
-    const newRecord = {
-      original_url: longUrl.trim(), short_code: slug, clicks_count: 0,
-      is_disabled: false, visitor_id: visitorId,
-      password_hash: isProtected ? password.trim() : null
-    }
-    const { data, error } = await supabase.from("links").insert([newRecord]).select()
-    setGenerating(false)
-    if (error) {
-      if (error.code === "23505") setAliasError(`Alias "${slug}" is already taken. Try another alias.`)
-      else { setAliasError("Unable to save link right now. Please try again."); console.error("Insert error:", error) }
-      return
-    }
-    if (data && data.length > 0) {
-      const g = data[0]
-      setLinks(prev => [g, ...prev])
-      setLongUrl(""); setAlias(""); setPassword(""); setPasswordProtected(false)
-      setCreatedModal({
-        workingUrl: `${window.location.origin}/${g.short_code}`,
-        displayUrl: `go.linkpulse.io/${g.short_code}`,
-        originalUrl: g.original_url,
-        isProtected: Boolean(g.password_hash)
-      })
-    }
+  // ── Redirect Screen ───────────────────────────────────────────────────────
+  // Agar koi shortened link open kara ja raha hai to sirf loading screen dikhao
+  if (linkManager.redirecting) {
+    return <RedirectLoader />
   }
 
-  const copyLink = async (textToCopy) => {
-    await navigator.clipboard?.writeText(textToCopy)
-    setCopied(textToCopy)
-    setTimeout(() => setCopied(null), 1600)
-  }
-
-  /* ── Redirect Loader ── */
-  if (redirecting) {
-    return (
-      <main className="min-h-screen flex flex-col items-center justify-center p-6">
-        <CustomCursor />
-        <AnimatedBackground />
-        <div className="relative z-10 flex flex-col items-center gap-6">
-          <div className="redirect-logo">
-            <span>LP</span>
-          </div>
-          <div className="flex items-center gap-3 rounded-full px-6 py-3 backdrop-blur-xl" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
-            <Sparkles className="size-4 animate-spin text-violet-400" />
-            <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>Routing via GhostClick™ Bot Shield...</span>
-          </div>
-        </div>
-      </main>
-    )
-  }
-
+  // ── Main Page Render ──────────────────────────────────────────────────────
   return (
-    <main className="min-h-screen font-sans antialiased overflow-x-hidden" style={{ color: "var(--text-primary)" }}>
+    <main
+      className="min-h-screen font-sans antialiased overflow-x-hidden"
+      style={{ color: "var(--text-primary)" }}
+    >
+      {/* ── Global decorative elements (har section mein common) ─────────── */}
       <CustomCursor />
       <AnimatedBackground />
+
+      {/* ── Intro animation — page load pe pehli baar dikhti hai ─────────── */}
       <IntroAnimation onDone={handleIntroDone} />
-      <MobileNav onGetStarted={scrollToShortener} theme={theme} onToggleTheme={toggleTheme} />
 
-      {/* ─── HERO ──────────────────────────────────────────────────────────── */}
-      <section
-        ref={heroRef}
-        className="hero relative h-screen overflow-hidden flex items-end"
-        onPointerLeave={resetHeroParallax}
-        onPointerMove={handleHeroPointerMove}
-      >
-        <div ref={heroGlassRef} className="hero-glass-layer absolute inset-[-5%] z-0">
-          <video
-            autoPlay loop muted playsInline
-            className="hero-glass-video absolute inset-0 h-full w-full object-cover"
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/agentic-hero-9yW3wnTNMfn2U6lsVhTTZSJFEvAoSj.mp4"
-            style={{
-              transform: videoReady ? "scale(1.05)" : "scale(0.85)",
-              filter: theme === "dark"
-                ? "brightness(0.52) saturate(1.25) contrast(1.08)"
-                : "brightness(1.08) saturate(0.68) contrast(0.92)",
-              transition: "transform 2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.7s ease",
-            }}
-          />
-        </div>
-        <div
-          className="hero-bottom-overlay absolute inset-x-0 bottom-0 h-[70%]"
-          aria-hidden="true"
-        />
+      {/* ── Mobile navigation bar ─────────────────────────────────────────── */}
+      <MobileNav
+        onGetStarted={scrollToShortener}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
 
+      {/* ══════════════════════════════════════════════════════════════════════
+          PAGE SECTIONS — upar se neeche
+         ══════════════════════════════════════════════════════════════════════ */}
 
-        {/* Floating pills */}
-        <FloatingPill text="go.lp/launch-2025" delay={0} x={76} y={18} />
-        <FloatingPill text="go.lp/product-hunt" delay={1.2} x={78} y={38} className="floating-pill-hide-tablet" />
-        <FloatingPill text="go.lp/investor-deck" delay={2.4} x={72} y={58} />
-        <FloatingPill text="go.lp/waitlist" delay={0.8} x={82} y={76} className="floating-pill-hide-tablet" />
+      {/* 1. Hero Section — fullscreen video background + headline + CTAs */}
+      <HeroSection
+        heroReady={heroReady}
+        videoReady={videoReady}
+        theme={theme}
+        onScrollDown={scrollToShortener}
+        onScrollFeatures={scrollToFeatures}
+      />
 
-        {/* Hero text */}
-        <div className="hero-content relative z-[2] w-full px-6 pb-16 md:px-14 lg:px-20">
-          <div className="max-w-5xl">
-            <div
-              className="hero-badge mb-6"
-              style={{ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(16px)", transition: "opacity .6s ease, transform .6s ease" }}
-            >
-              <Sparkles className="size-3 text-violet-400" />
-              <span>Next-Gen URL Intelligence Platform</span>
-            </div>
-            <h1
-              className="hero-headline"
-              style={{ opacity: heroReady ? 1 : 0, filter: heroReady ? "blur(0px)" : "blur(24px)", transform: heroReady ? "translateY(0px)" : "translateY(32px)", transition: "opacity 1s cubic-bezier(0.16,1,0.3,1), filter 1s cubic-bezier(0.16,1,0.3,1), transform 1s cubic-bezier(0.16,1,0.3,1)" }}
-            >
-              Links That<br /><span className="gradient-text">Think For You.</span>
-            </h1>
-            <p
-              className="hero-sub"
-              style={{ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(20px)", transition: "opacity .8s ease 120ms, transform .8s ease 120ms" }}
-            >
-              LinkPulse goes beyond shortening. Arm every link with GhostClick™ Bot Shield,
-              live analytics, and smart routing — all in one blazing-fast platform.
-            </p>
-            <div
-              className="flex flex-wrap items-center gap-4 mt-8"
-              style={{ opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(20px)", transition: "opacity .8s ease 200ms, transform .8s ease 200ms" }}
-            >
-              <button onClick={scrollToShortener} className="cta-primary">
-                Shorten a Link <ArrowUpRight className="size-4" />
-              </button>
-              <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} className="cta-ghost">
-                See Features <ChevronRight className="size-4" />
-              </button>
-            </div>
-            <div
-              className="flex items-center gap-6 mt-10"
-              style={{ opacity: heroReady ? 1 : 0, transition: "opacity .8s ease 280ms" }}
-            >
-              {["GHOSTCLICK™", "REAL-TIME ANALYTICS", "SMART ROUTING"].map((p, i) => (
-                <div key={p} className="hero-pillar" style={{ transitionDelay: `${300 + i * 80}ms` }}>
-                  <span className="pillar-dot" />
-                  {p}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+      {/* 2. Shortener Section — link banane ka form + stats + table */}
+      <ShortenerSection
+        sectionRef={shortenerRef}
+        tableRef={linkManager.tableRef}
+        links={linkManager.links}
+        loading={linkManager.loading}
+        totalClicks={linkManager.totalClicks}
+        activeLinksCount={linkManager.activeLinksCount}
+        longUrl={linkManager.longUrl}
+        setLongUrl={linkManager.setLongUrl}
+        alias={linkManager.alias}
+        setAlias={linkManager.setAlias}
+        aliasError={linkManager.aliasError}
+        setAliasError={linkManager.setAliasError}
+        passwordProtected={linkManager.passwordProtected}
+        setPasswordProtected={linkManager.setPasswordProtected}
+        password={linkManager.password}
+        setPassword={linkManager.setPassword}
+        generating={linkManager.generating}
+        copied={linkManager.copied}
+        onSubmit={linkManager.handleGenerate}
+        onCopy={linkManager.copyLink}
+      />
 
-        {/* Scroll indicator */}
-        <button onClick={scrollToShortener} className="scroll-indicator z-30">
-          <ArrowDown className="size-4 animate-bounce" />
-        </button>
-      </section>
+      {/* 3. Features Section — 6 feature cards grid */}
+      <FeaturesSection />
 
-      {/* ─── SHORTENER SECTION ─────────────────────────────────────────────── */}
-      <section ref={linkPulseRef} id="shortener" className="relative z-10 px-6 py-24 md:px-12 lg:px-20">
-        <div className="mx-auto max-w-6xl">
-          {/* Section header */}
-          <div className="mb-12 text-center">
-            <div className="section-badge mx-auto mb-4">
-              <Link2 className="size-3.5 text-violet-400" /> CREATE
-            </div>
-            <h2 className="section-title">Create your secure LinkPulse URL.</h2>
-            <p className="section-sub mx-auto">Paste, customize, and launch your link in under 3 seconds.</p>
-          </div>
+      {/* 4. How It Works Section — 3 steps with connector line */}
+      <HowItWorksSection />
 
-          {/* Shortener form */}
-          <GlassCard glow className="p-6 md:p-10">
-            <form onSubmit={handleGenerate} className="grid gap-6 lg:grid-cols-[1fr_0.8fr_auto] lg:items-end">
-              <label className="flex flex-col gap-2 text-xs uppercase tracking-[0.16em] text-white/40">
-                Long URL
-                <input
-                  required type="url" value={longUrl}
-                  onChange={e => setLongUrl(e.target.value)}
-                  placeholder="https://your-very-long-link.com/path?with=params"
-                  className="form-input"
-                />
-              </label>
+      {/* 5. FAQ Section — accordion style questions & answers */}
+      <FAQSection openFaq={openFaq} setOpenFaq={setOpenFaq} />
 
-              <div className="flex flex-col justify-end">
-                <label className="flex flex-col gap-2 text-xs uppercase tracking-[0.16em] text-white/40">
-                  <div className="flex items-center justify-between">
-                    <span>Custom Alias</span>
-                    <span className="normal-case tracking-normal text-white/25">optional</span>
-                  </div>
-                  <div className={`form-input-prefix ${aliasError ? "border-rose-500/60" : ""}`}>
-                    <span className="shrink-0 text-white/25 text-xs">go.lp/</span>
-                    <input
-                      value={alias}
-                      onChange={e => { setAlias(e.target.value); if (aliasError) setAliasError("") }}
-                      placeholder="your-alias"
-                      className="min-w-0 flex-1 bg-transparent pl-1 outline-none placeholder:text-white/20 text-white text-sm"
-                    />
-                  </div>
-                </label>
-                {aliasError && (
-                  <div className="mt-2 flex items-center gap-1.5 text-xs text-rose-400">
-                    <span className="size-1.5 shrink-0 rounded-full bg-rose-400" />
-                    {aliasError}
-                  </div>
-                )}
-              </div>
+      {/* 6. CTA Banner — "Get Started Free" promotional banner */}
+      <CTABanner onGetStarted={scrollToShortener} />
 
-              <button type="submit" disabled={generating} className="cta-generate">
-                {generating ? (
-                  <><span className="generate-spinner" /> Generating...</>
-                ) : (
-                  <>Generate <ArrowUpRight className="size-4" /></>
-                )}
-              </button>
-            </form>
+      {/* 7. Footer — logo + credits */}
+      <Footer theme={theme} />
 
-            <div className="mt-6 flex flex-wrap items-center gap-5 pt-5 border-t border-white/[0.06]">
-              <label className="inline-flex cursor-pointer items-center gap-3 text-sm text-white/50">
-                <input type="checkbox" checked={passwordProtected} onChange={e => setPasswordProtected(e.target.checked)} className="peer sr-only" />
-                <span className="custom-checkbox peer-checked:border-violet-500 peer-checked:bg-violet-500">
-                  <Check className="size-3 opacity-0 peer-checked:opacity-100" />
-                </span>
-                <LockKeyhole className="size-4 text-white/30" /> Password protect this link
-              </label>
-              {passwordProtected && (
-                <div className="relative flex items-center">
-                  <KeyRound className="absolute left-3.5 size-3.5 text-white/30" />
-                  <input
-                    type="password" required value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="Set secret password"
-                    className="h-10 rounded-xl border border-white/10 bg-white/5 pl-9 pr-4 text-xs text-white outline-none transition placeholder:text-white/25 focus:border-violet-500/50 focus:bg-white/[0.08]"
-                  />
-                </div>
-              )}
-            </div>
-          </GlassCard>
-
-          {/* Stats row */}
-          <div className="mt-4 grid gap-4 sm:grid-cols-3">
-            <GlassCard className="p-6 stats-card">
-              <div className="stats-icon-wrap bg-emerald-500/10">
-                <ShieldCheck className="size-5 text-emerald-400" />
-              </div>
-              <div className="mt-4 text-3xl font-light tracking-tight tabular-nums">
-                <AnimatedCounter value={totalClicks} />
-              </div>
-              <div className="mt-1 text-xs uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Verified Clicks</div>
-              <div className="mt-2 text-[11px]" style={{ color: "var(--text-faint)" }}>Live tracked on your links</div>
-            </GlassCard>
-
-            <GlassCard className="p-6 stats-card">
-              <div className="stats-icon-wrap bg-blue-500/10">
-                <Link2 className="size-5 text-blue-400" />
-              </div>
-              <div className="mt-4 text-3xl font-light tracking-tight tabular-nums">
-                <AnimatedCounter value={activeLinksCount} />
-              </div>
-              <div className="mt-1 text-xs uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Active Links</div>
-              <div className="mt-2 text-[11px]" style={{ color: "var(--text-faint)" }}>Personal workspace</div>
-            </GlassCard>
-
-            <GlassCard className="p-6 stats-card">
-              <div className="stats-icon-wrap bg-violet-500/10">
-                <ShieldCheck className="size-5 text-violet-400" />
-              </div>
-              <div className="mt-4 text-3xl font-light tracking-tight text-emerald-400">
-                Active
-              </div>
-              <div className="mt-1 text-xs uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Shield Status</div>
-              <div className="mt-2 flex items-center gap-1.5 text-[11px] text-emerald-400/60">
-                <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                GhostClick™ engine running
-              </div>
-            </GlassCard>
-          </div>
-
-          {/* Links table */}
-          <div ref={tableRef}>
-            <GlassCard className="mt-4 overflow-hidden">
-              <div className="flex items-center justify-between px-6 py-5 md:px-8" style={{ borderBottom: "1px solid var(--border)" }}>
-                <div>
-                  <h3 className="text-base font-medium" style={{ color: "var(--text-primary)" }}>Recently shortened links</h3>
-                  <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Your private workspace activity, live from Supabase.</p>
-                </div>
-                <div className="flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1">
-                  <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-[10px] uppercase tracking-widest text-emerald-400/70">Live</span>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left text-sm">
-                  <thead className="text-[10px] uppercase tracking-[0.16em]" style={{ borderBottom: "1px solid var(--border)", color: "var(--thead-text)" }}>
-                    <tr>
-                      <th className="px-6 py-4 font-normal md:px-8">Short Link</th>
-                      <th className="px-4 py-4 font-normal">Original URL</th>
-                      <th className="px-4 py-4 font-normal">Status</th>
-                      <th className="px-6 py-4 font-normal md:px-8">Clicks</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading ? (
-                      <tr>
-                        <td colSpan="4" className="px-6 py-10 text-center text-xs" style={{ color: "var(--text-muted)" }}>
-                          <div className="flex items-center justify-center gap-2">
-                            <span className="size-4 rounded-full border-2 border-violet-500/40 border-t-violet-500 animate-spin" />
-                            Connecting to database...
-                          </div>
-                        </td>
-                      </tr>
-                    ) : links.length === 0 ? (
-                      <tr>
-                        <td colSpan="4" className="px-6 py-12 text-center">
-                          <div className="flex flex-col items-center gap-3">
-                            <Link2 className="size-8 text-white/10" strokeWidth={1} />
-                            <p className="text-xs text-white/30">No links yet. Create your first link above.</p>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      links.map(link => {
-                        const directUrl = `${window.location.origin}/${link.short_code}`
-                        const displayBrand = `go.lp/${link.short_code}`
-                        return (
-                          <tr key={link.id || link.short_code} className="table-row-hover border-b border-white/[0.04] last:border-0">
-                            <td className="px-6 py-5 md:px-8">
-                              <div className="inline-flex items-center gap-2">
-                                <a href={directUrl} target="_blank" rel="noopener noreferrer"
-                                  className="font-mono text-xs text-violet-400 hover:text-violet-300 hover:underline transition-colors">
-                                  {displayBrand}
-                                </a>
-                                <button type="button" onClick={() => copyLink(directUrl)}
-                                  className="inline-flex items-center p-1 text-white/25 hover:text-white/70 transition-colors" title="Copy link">
-                                  {copied === directUrl
-                                    ? <Check className="size-3 text-emerald-400" />
-                                    : <Copy className="size-3" />}
-                                </button>
-                              </div>
-                            </td>
-                            <td className="max-w-[240px] truncate px-4 py-5 text-xs text-white/30">
-                              {link.original_url}
-                            </td>
-                            <td className="px-4 py-5">
-                              <span className={`status-badge ${link.is_disabled ? "status-disabled" : link.password_hash ? "status-protected" : "status-active"}`}>
-                                <span className={`size-1.5 rounded-full ${link.is_disabled ? "bg-amber-400" : link.password_hash ? "bg-violet-400" : "bg-emerald-400"}`} />
-                                {link.is_disabled ? "Disabled" : link.password_hash ? "Protected" : "Active"}
-                              </span>
-                            </td>
-                            <td className="px-6 py-5 md:px-8">
-                              <div className="flex items-center gap-3">
-                                <div className="h-1 w-20 overflow-hidden rounded-full bg-white/[0.07]">
-                                  <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500"
-                                    style={{ width: `${Math.min((link.clicks_count || 0), 100)}%` }} />
-                                </div>
-                                <span className="text-xs text-white/40 tabular-nums">{link.clicks_count || 0}</span>
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </GlassCard>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── FEATURES SECTION ──────────────────────────────────────────────── */}
-      <section id="features" className="relative z-10 px-6 py-24 md:px-12 lg:px-20">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-16 text-center">
-            <div className="section-badge mx-auto mb-4">
-              <Sparkles className="size-3.5 text-violet-400" /> FEATURES
-            </div>
-            <h2 className="section-title">Everything you need.<br /><span className="gradient-text">Nothing you don't.</span></h2>
-            <p className="section-sub mx-auto">A full suite of link intelligence tools built for marketers, developers, and creators.</p>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((f, i) => (
-              <div key={f.title} className="feature-card group" style={{ animationDelay: `${i * 80}ms` }}>
-                <div className={`feature-icon-bg bg-gradient-to-br ${f.color}`} style={{ "--accent": f.accent }}>
-                  <f.icon className="size-5" style={{ color: f.accent }} />
-                </div>
-                <h3 className="mt-5 text-base font-medium text-white/90">{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-white/40">{f.desc}</p>
-                <div className="feature-line" style={{ background: `linear-gradient(90deg, ${f.accent}40, transparent)` }} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── HOW IT WORKS ───────────────────────────────────────────────────── */}
-      <section id="how-it-works" className="relative z-10 px-6 py-24 md:px-12 lg:px-20">
-        <div className="mx-auto max-w-4xl">
-          <div className="mb-16 text-center">
-            <div className="section-badge mx-auto mb-4">
-              <MousePointerClick className="size-3.5 text-violet-400" /> HOW IT WORKS
-            </div>
-            <h2 className="section-title">From URL to insight<br /><span className="gradient-text">in 3 steps.</span></h2>
-          </div>
-
-          <div className="relative">
-            {/* Connector line */}
-            <div className="absolute left-[28px] top-12 bottom-12 w-px bg-gradient-to-b from-violet-500/40 via-blue-500/20 to-transparent hidden md:block" />
-            <div className="flex flex-col gap-10">
-              {STEPS.map(step => (
-                <div key={step.num} className="step-card group">
-                  <div className="step-num">
-                    <span>{step.num}</span>
-                  </div>
-                  <div className="ml-6 md:ml-10">
-                    <h3 className="text-lg font-medium text-white/90">{step.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-white/40">{step.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── FAQ SECTION ────────────────────────────────────────────────────── */}
-      <section id="faq" aria-labelledby="faq-title" className="faq-section relative z-10 px-6 py-24 md:px-12 lg:px-20">
-        <div className="faq-layout mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
-          <div>
-            <p className="faq-eyebrow">FREQUENTLY ASKED QUESTIONS</p>
-            <h2 id="faq-title" className="faq-title">
-              Everything you need to know about LinkPulse.
-            </h2>
-            <p className="faq-intro">Quick answers about creating, protecting, and tracking your links.</p>
-          </div>
-
-          <div className="faq-list">
-            {FAQS.map((faq, index) => {
-              const isOpen = openFaq === index
-              const answerId = `faq-answer-${index}`
-
-              return (
-                <div className="faq-item" key={faq.question}>
-                  <h3 className="faq-question-heading">
-                    <button
-                      aria-controls={answerId}
-                      aria-expanded={isOpen}
-                      className="faq-question"
-                      onClick={() => setOpenFaq(isOpen ? null : index)}
-                      type="button"
-                    >
-                      <span>{faq.question}</span>
-                      {isOpen
-                        ? <Minus aria-hidden="true" className="faq-icon" />
-                        : <Plus aria-hidden="true" className="faq-icon" />}
-                    </button>
-                  </h3>
-                  <div
-                    aria-hidden={!isOpen}
-                    className={`faq-answer${isOpen ? " is-open" : ""}`}
-                    id={answerId}
-                  >
-                    <div className="faq-answer-inner">
-                      <p>{faq.answer}</p>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── CTA BANNER ─────────────────────────────────────────────────────── */}
-      <section className="relative z-10 px-6 py-16 md:px-12 lg:px-20">
-        <div className="mx-auto max-w-4xl">
-          <div className="cta-banner">
-            <div className="cta-banner-glow" />
-            <div className="relative z-10 flex flex-col items-center gap-6 text-center">
-              <div className="flex items-center gap-2 rounded-full bg-white/5 px-4 py-2 border border-white/10">
-                <Star className="size-3.5 fill-amber-400 text-amber-400" />
-                <span className="text-xs text-white/60">Free for personal use. No signup required.</span>
-              </div>
-              <h2 className="text-4xl font-light tracking-tight md:text-5xl">
-                Ready to pulse your <span className="gradient-text">links?</span>
-              </h2>
-              <p className="max-w-lg text-sm text-white/40 leading-relaxed">
-                Join thousands of creators and marketers who trust LinkPulse for smarter, safer link management.
-              </p>
-              <button onClick={scrollToShortener} className="cta-primary text-base px-8 py-4">
-                Get Started Free <ArrowUpRight className="size-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── FOOTER ─────────────────────────────────────────────────────────── */}
-      <footer className="relative z-10 px-6 py-12 md:px-12 lg:px-20 border-t border-white/[0.05]">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex flex-col items-center gap-8 md:flex-row md:justify-between">
-            <div>
-              <div className="flex items-center gap-3">
-                <img
-                  className="footer-brand-logo"
-                  src={theme === "dark" ? darkThemeLogo : lightThemeLogo}
-                  alt="LinkPulse"
-                />
-              </div>
-              <p className="mt-2 text-xs text-white/25 max-w-xs">
-                Next-generation URL intelligence. Shorten, protect, analyze.
-              </p>
-            </div>
-            <div className="flex flex-col items-center gap-3">
-              <div className="flex items-center gap-2 text-xs text-white/35">
-                <span>Built by</span>
-                <a
-                  href="https://www.linkedin.com/in/rahulmelkani/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="footer-credit-link"
-                >
-                  Rahul
-                </a>
-                <span className="text-white/20">&amp;</span>
-                <a
-                  href="https://www.linkedin.com/in/dipanshu-chandola-842b853b7/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="footer-credit-link"
-                >
-                  Dipanshu
-                </a>
-              </div>
-              <p className="text-[11px] text-white/15">© {new Date().getFullYear()} LinkPulse</p>
-            </div>
-          </div>
-        </div>
-      </footer>
-
-      {/* ─── CREATED MODAL ──────────────────────────────────────────────────── */}
-      {createdModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-md">
-          <div className="modal-card">
-            <div className="modal-confetti" aria-hidden="true">
-              {[...Array(12)].map((_, i) => (
-                <span key={i} className="confetti-dot" style={{ "--i": i }} />
-              ))}
-            </div>
-            <button onClick={() => setCreatedModal(null)}
-              className="absolute right-4 top-4 rounded-full p-2 text-white/30 hover:bg-white/5 hover:text-white/70 transition-colors z-10">
-              <X className="size-4" />
-            </button>
-
-            <div className="relative z-10 p-6 md:p-8">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-400">
-                <Check className="size-3.5" /> Link Ready
-              </div>
-              <h3 className="text-xl font-light text-white">Your link is live 🚀</h3>
-              <p className="mt-1 truncate text-xs text-white/35">Redirects to: {createdModal.originalUrl}</p>
-              {createdModal.isProtected && (
-                <p className="mt-1 text-xs font-medium text-violet-400 flex items-center gap-1.5">
-                  <LockKeyhole className="size-3" /> Password protection active
-                </p>
-              )}
-
-              <div className="mt-5 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-3 backdrop-blur-sm">
-                <span className="truncate font-mono text-xs text-white/70">{createdModal.displayUrl}</span>
-                <div className="flex items-center gap-2 shrink-0 ml-3">
-                  <a href={createdModal.workingUrl} target="_blank" rel="noopener noreferrer"
-                    className="rounded-xl border border-white/10 bg-white/5 p-2 text-white/40 hover:text-white/80 transition-colors">
-                    <ExternalLink className="size-3.5" />
-                  </a>
-                  <button type="button" onClick={() => copyLink(createdModal.workingUrl)}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-4 py-2 text-xs text-white transition hover:opacity-90 shadow-lg shadow-violet-500/20">
-                    {copied === createdModal.workingUrl
-                      ? <><Check className="size-3.5 text-emerald-300" /> Copied!</>
-                      : <><Copy className="size-3.5" /> Copy Link</>}
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-5 flex justify-end gap-2">
-                <button onClick={() => { setCreatedModal(null); tableRef.current?.scrollIntoView({ behavior: "smooth" }) }}
-                  className="rounded-xl border border-white/10 px-4 py-2 text-xs text-white/40 hover:bg-white/5 hover:text-white/70 transition-colors">
-                  View in table
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── Modal — link create hone ke baad popup ────────────────────────── */}
+      {/* Sirf tab render hota hai jab createdModal null nahi ho */}
+      <CreatedModal
+        modalData={linkManager.createdModal}
+        copied={linkManager.copied}
+        onCopy={linkManager.copyLink}
+        onClose={linkManager.closeModal}
+        onViewTable={linkManager.viewInTable}
+      />
     </main>
   )
 }
