@@ -5,13 +5,21 @@
     <script>
       (function() {
         try {
-          var t = localStorage.getItem('lp_theme') || 'dark';
+          var t = localStorage.getItem('lp_theme') || localStorage.getItem('linkpulse_theme') || 'dark';
           document.documentElement.setAttribute('data-theme', t);
         } catch(e) {}
       })();
     </script>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <script>
+      const savedTheme = localStorage.getItem("lp_theme") || localStorage.getItem("linkpulse_theme");
+      const initialTheme = savedTheme === "dark" || savedTheme === "light"
+        ? savedTheme
+        : window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+      document.documentElement.dataset.theme = initialTheme;
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
     <!-- LinkPulse SEO & Fonts -->

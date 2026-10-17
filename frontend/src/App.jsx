@@ -5,10 +5,12 @@ import {
   ArrowDown, ArrowUpRight, Check, Copy, ExternalLink,
   KeyRound, Link2, LockKeyhole, ShieldCheck, Sparkles, X,
   Zap, BarChart3, Globe, Layers, MousePointerClick,
-  ChevronRight, Star
+  ChevronRight, Star, Minus, Plus
 } from "lucide-react"
 import { IntroAnimation, HERO_REVEAL_MS } from "./components/intro-animation"
 import { MobileNav } from "./components/mobile-nav"
+import darkThemeLogo from "./assets/linkpulse-logo.png"
+import lightThemeLogo from "./assets/linkpulse-logo-light.png"
 import { supabase } from "./supabase"
 
 /* ─── Animated Background Orbs ─────────────────────────────────────────────── */
@@ -135,16 +137,22 @@ function AnimatedBackground() {
 }
 
 /* ─── Floating 3D URL Pill ──────────────────────────────────────────────────── */
-function FloatingPill({ text, delay = 0, x = 0, y = 0 }) {
+function FloatingPill({ text, delay = 0, x = 0, y = 0, className = "" }) {
   return (
     <div
-      className="floating-pill"
+      className={`floating-pill ${className}`}
       style={{ animationDelay: `${delay}s`, left: `${x}%`, top: `${y}%` }}
     >
       <span className="pill-dot" />
       {text}
     </div>
   )
+}
+
+function getInitialTheme() {
+  const savedTheme = localStorage.getItem("lp_theme") || localStorage.getItem("linkpulse_theme")
+  if (savedTheme === "dark" || savedTheme === "light") return savedTheme
+  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"
 }
 
 /* ─── Glass Card ─────────────────────────────────────────────────────────────── */
@@ -252,7 +260,10 @@ function AnimatedCounter({ value, suffix = "" }) {
   useEffect(() => {
     let start = 0
     const end = Number(value)
-    if (end === 0) { setDisplay(0); return }
+    if (end === 0) {
+      const timer = setTimeout(() => setDisplay(0), 0)
+      return () => clearTimeout(timer)
+    }
     const step = Math.ceil(end / 40)
     const timer = setInterval(() => {
       start += step
@@ -317,8 +328,33 @@ const STEPS = [
   { num: "03", title: "Go live instantly", desc: "Your branded short link is live in milliseconds. Share anywhere." },
 ]
 
+const FAQS = [
+  {
+    question: "What is LinkPulse?",
+    answer: "LinkPulse turns long URLs into short links. You can customize a link with an alias, protect it with a password, and track its clicks.",
+  },
+  {
+    question: "Is LinkPulse free?",
+    answer: "LinkPulse is currently described as free for personal use, with no sign-up required.",
+  },
+  {
+    question: "What is GhostClick™?",
+    answer: "GhostClick™ is LinkPulse's bot-shield feature. It filters fake clicks so your click counts focus on real visitors.",
+  },
+  {
+    question: "Can I password-protect a link?",
+    answer: "Yes. Enable password protection when creating your link and choose a password. Visitors must enter it correctly to continue to the destination.",
+  },
+  {
+    question: "Can I create a custom alias?",
+    answer: "Yes. Enter an alias when creating your link. If it is already taken, LinkPulse will let you know so you can try another.",
+  },
+]
+
 /* ─── Main Page ────────────────────────────────────────────────────────────── */
 export default function LinkPulsePage() {
+  const [theme, setTheme] = useState(getInitialTheme)
+  const [openFaq, setOpenFaq] = useState(null)
   const [heroReady, setHeroReady] = useState(false)
   const [videoReady, setVideoReady] = useState(false)
   const [longUrl, setLongUrl] = useState("")
@@ -332,10 +368,6 @@ export default function LinkPulsePage() {
   const [copied, setCopied] = useState(null)
   const [createdModal, setCreatedModal] = useState(null)
   const [generating, setGenerating] = useState(false)
-  const [theme, setTheme] = useState(() => {
-    // Persist preference across reloads
-    return localStorage.getItem("lp_theme") || "dark"
-  })
 
   // Apply theme to <html> so CSS variables work globally (body, fixed elements, etc.)
   useEffect(() => {
@@ -350,14 +382,16 @@ export default function LinkPulsePage() {
     })
   }, [])
 
-  const isDark = theme === "dark"
-
   const linkPulseRef = useRef(null)
   const tableRef = useRef(null)
+  const heroRef = useRef(null)
+  const heroGlassRef = useRef(null)
+  const heroParallaxFrame = useRef(null)
 
   const visitorId = useMemo(() => {
     let id = localStorage.getItem("linkpulse_visitor_id")
     if (!id) {
+      // eslint-disable-next-line react-hooks/purity
       id = "usr_" + Math.random().toString(36).substring(2, 9) + Date.now().toString(36)
       localStorage.setItem("linkpulse_visitor_id", id)
     }
@@ -365,6 +399,39 @@ export default function LinkPulsePage() {
   }, [])
 
   const handleIntroDone = useCallback(() => setHeroReady(true), [])
+
+  const handleHeroPointerMove = (event) => {
+    if (
+      window.matchMedia("(hover: none)").matches ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) return
+
+    const bounds = heroRef.current?.getBoundingClientRect()
+    if (!bounds) return
+
+    const x = ((event.clientX - bounds.left) / bounds.width - 0.5) * 40
+    const y = ((event.clientY - bounds.top) / bounds.height - 0.5) * 40
+    cancelAnimationFrame(heroParallaxFrame.current)
+    heroParallaxFrame.current = requestAnimationFrame(() => {
+      heroGlassRef.current?.style.setProperty("--parallax-x", `${x}px`)
+      heroGlassRef.current?.style.setProperty("--parallax-y", `${y}px`)
+    })
+  }
+
+  const resetHeroParallax = () => {
+    cancelAnimationFrame(heroParallaxFrame.current)
+    heroParallaxFrame.current = requestAnimationFrame(() => {
+      heroGlassRef.current?.style.setProperty("--parallax-x", "0px")
+      heroGlassRef.current?.style.setProperty("--parallax-y", "0px")
+    })
+  }
+
+  useEffect(() => () => cancelAnimationFrame(heroParallaxFrame.current), [])
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem("linkpulse_theme", theme)
+  }, [theme])
 
   useEffect(() => {
     const timer = setTimeout(() => setVideoReady(true), HERO_REVEAL_MS)
@@ -374,6 +441,8 @@ export default function LinkPulsePage() {
   useEffect(() => {
     const slug = window.location.pathname.replace(/^\/+/, "").trim()
     if (!slug) return
+    // Redirect lookup begins from the current URL and intentionally switches to its loader state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRedirecting(true)
     async function processRedirect() {
       const { data, error } = await supabase
@@ -408,6 +477,7 @@ export default function LinkPulsePage() {
     setLoading(false)
   }, [visitorId])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchLinks() }, [fetchLinks])
 
   const totalClicks = useMemo(() => links.reduce((sum, l) => sum + (Number(l.clicks_count) || 0), 0), [links])
@@ -485,25 +555,40 @@ export default function LinkPulsePage() {
       <MobileNav onGetStarted={scrollToShortener} theme={theme} onToggleTheme={toggleTheme} />
 
       {/* ─── HERO ──────────────────────────────────────────────────────────── */}
-      <section className="relative h-screen overflow-hidden flex items-end">
-        <video
-          autoPlay loop muted playsInline
-          className="absolute inset-0 z-0 h-full w-full object-cover opacity-30"
-          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/agentic-hero-9yW3wnTNMfn2U6lsVhTTZSJFEvAoSj.mp4"
-          style={{ transform: videoReady ? "scale(1.05)" : "scale(0.85)", transition: "transform 2s cubic-bezier(0.16, 1, 0.3, 1)" }}
+      <section
+        ref={heroRef}
+        className="hero relative h-screen overflow-hidden flex items-end"
+        onPointerLeave={resetHeroParallax}
+        onPointerMove={handleHeroPointerMove}
+      >
+        <div ref={heroGlassRef} className="hero-glass-layer absolute inset-[-5%] z-0">
+          <video
+            autoPlay loop muted playsInline
+            className="hero-glass-video absolute inset-0 h-full w-full object-cover"
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/agentic-hero-9yW3wnTNMfn2U6lsVhTTZSJFEvAoSj.mp4"
+            style={{
+              transform: videoReady ? "scale(1.05)" : "scale(0.85)",
+              filter: theme === "dark"
+                ? "brightness(0.52) saturate(1.25) contrast(1.08)"
+                : "brightness(1.08) saturate(0.68) contrast(0.92)",
+              transition: "transform 2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.7s ease",
+            }}
+          />
+        </div>
+        <div
+          className="hero-bottom-overlay absolute inset-x-0 bottom-0 h-[70%]"
+          aria-hidden="true"
         />
-        {/* Overlays */}
-        <div className="absolute inset-0 z-10" style={{ background: "var(--hero-overlay-1)" }} />
-        <div className="absolute inset-x-0 bottom-0 z-10 h-[70%]" style={{ background: "var(--hero-gradient)" }} />
+
 
         {/* Floating pills */}
-        <FloatingPill text="go.lp/launch-2025" delay={0} x={72} y={20} />
-        <FloatingPill text="go.lp/product-hunt" delay={1.2} x={10} y={35} />
-        <FloatingPill text="go.lp/investor-deck" delay={2.4} x={60} y={55} />
-        <FloatingPill text="go.lp/waitlist" delay={0.8} x={25} y={65} />
+        <FloatingPill text="go.lp/launch-2025" delay={0} x={76} y={18} />
+        <FloatingPill text="go.lp/product-hunt" delay={1.2} x={78} y={38} className="floating-pill-hide-tablet" />
+        <FloatingPill text="go.lp/investor-deck" delay={2.4} x={72} y={58} />
+        <FloatingPill text="go.lp/waitlist" delay={0.8} x={82} y={76} className="floating-pill-hide-tablet" />
 
         {/* Hero text */}
-        <div className="relative z-30 w-full px-6 pb-16 md:px-14 lg:px-20">
+        <div className="hero-content relative z-[2] w-full px-6 pb-16 md:px-14 lg:px-20">
           <div className="max-w-5xl">
             <div
               className="hero-badge mb-6"
@@ -807,7 +892,7 @@ export default function LinkPulsePage() {
             {/* Connector line */}
             <div className="absolute left-[28px] top-12 bottom-12 w-px bg-gradient-to-b from-violet-500/40 via-blue-500/20 to-transparent hidden md:block" />
             <div className="flex flex-col gap-10">
-              {STEPS.map((step, i) => (
+              {STEPS.map(step => (
                 <div key={step.num} className="step-card group">
                   <div className="step-num">
                     <span>{step.num}</span>
@@ -819,6 +904,54 @@ export default function LinkPulsePage() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── FAQ SECTION ────────────────────────────────────────────────────── */}
+      <section id="faq" aria-labelledby="faq-title" className="faq-section relative z-10 px-6 py-24 md:px-12 lg:px-20">
+        <div className="faq-layout mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+          <div>
+            <p className="faq-eyebrow">FREQUENTLY ASKED QUESTIONS</p>
+            <h2 id="faq-title" className="faq-title">
+              Everything you need to know about LinkPulse.
+            </h2>
+            <p className="faq-intro">Quick answers about creating, protecting, and tracking your links.</p>
+          </div>
+
+          <div className="faq-list">
+            {FAQS.map((faq, index) => {
+              const isOpen = openFaq === index
+              const answerId = `faq-answer-${index}`
+
+              return (
+                <div className="faq-item" key={faq.question}>
+                  <h3 className="faq-question-heading">
+                    <button
+                      aria-controls={answerId}
+                      aria-expanded={isOpen}
+                      className="faq-question"
+                      onClick={() => setOpenFaq(isOpen ? null : index)}
+                      type="button"
+                    >
+                      <span>{faq.question}</span>
+                      {isOpen
+                        ? <Minus aria-hidden="true" className="faq-icon" />
+                        : <Plus aria-hidden="true" className="faq-icon" />}
+                    </button>
+                  </h3>
+                  <div
+                    aria-hidden={!isOpen}
+                    className={`faq-answer${isOpen ? " is-open" : ""}`}
+                    id={answerId}
+                  >
+                    <div className="faq-answer-inner">
+                      <p>{faq.answer}</p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </section>
@@ -853,19 +986,38 @@ export default function LinkPulsePage() {
           <div className="flex flex-col items-center gap-8 md:flex-row md:justify-between">
             <div>
               <div className="flex items-center gap-3">
-                <div className="footer-logo">LP</div>
-                <span className="text-base font-medium text-white/80 tracking-wide">LinkPulse</span>
+                <img
+                  className="footer-brand-logo"
+                  src={theme === "dark" ? darkThemeLogo : lightThemeLogo}
+                  alt="LinkPulse"
+                />
               </div>
               <p className="mt-2 text-xs text-white/25 max-w-xs">
                 Next-generation URL intelligence. Shorten, protect, analyze.
               </p>
             </div>
             <div className="flex flex-col items-center gap-3">
-              <div className="flex items-center gap-2 text-xs text-white/20">
-                <ShieldCheck className="size-3.5 text-emerald-400" />
-                <span>Powered by Supabase Edge Network</span>
+              <div className="flex items-center gap-2 text-xs text-white/35">
+                <span>Built by</span>
+                <a
+                  href="https://www.linkedin.com/in/rahulmelkani/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="footer-credit-link"
+                >
+                  Rahul
+                </a>
+                <span className="text-white/20">&amp;</span>
+                <a
+                  href="https://www.linkedin.com/in/dipanshu-chandola-842b853b7/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="footer-credit-link"
+                >
+                  Dipanshu
+                </a>
               </div>
-              <p className="text-[11px] text-white/15">© 2025 LinkPulse. Built for builders.</p>
+              <p className="text-[11px] text-white/15">© {new Date().getFullYear()} LinkPulse</p>
             </div>
           </div>
         </div>
