@@ -1,17 +1,21 @@
 // ─── FeaturesSection.jsx ─────────────────────────────────────────────────────
-// Ye section LinkPulse ki 6 main features ko grid mein dikhata hai.
+// Ye section LinkPulse ki main features ko grid mein dikhata hai.
 // Har feature ek card hai jisme icon, title, aur description hai.
 // FEATURES array neeche define hai — nayi feature add karni ho to wahan karo.
 //
 // Features list:
-//   1. Click Tracking            — device and seven-day activity tracking
+//   1. Click Tracking             — device and seven-day activity tracking
 //   2. Click Analytics            — per-link activity summary
-//   3. Password Protection       — link lock kar sakte ho
-//   4. Fast Redirects            — validation before navigation
-//   5. Custom Aliases            — branded short links
-//   6. Expiry & Click Limits     — automatic link controls
+//   3. Ghost Click Detection      — rapid repeats separated from verified clicks
+//   4. Password Protection        — link lock kar sakte ho
+//   5. Fast Redirects             — validation before navigation
+//   6. Custom Aliases             — branded short links
+//   7. Expiry & Click Limits      — automatic link controls
+//   8. Link Management            — disable or delete links from the workspace
+//   9. Light & Dark Mode          — persistent workspace theme preference
+//  10. QR Code Sharing            — downloadable QR codes for generated links
 
-import { BarChart3, CalendarClock, Globe, LockKeyhole, MousePointerClick, Sparkles, Zap } from "lucide-react"
+import { BarChart3, CalendarClock, Ghost, Globe, LockKeyhole, MousePointerClick, Power, QrCode, Sparkles, SunMoon, Zap } from "lucide-react"
 
 // ── Features Data Array ───────────────────────────────────────────────────────
 // Har object mein: icon component, title, description, gradient color, accent color
@@ -25,10 +29,17 @@ const FEATURES = [
   },
   {
     icon: BarChart3,
-    title: "Click Analytics",
-    desc: "Review total clicks, device split, and recent activity for each link in a compact dashboard.",
+    title: "Traffic Quality Analytics",
+    desc: "See verified visits, device mix, ghost clicks, and bot or preview traffic in a live dashboard with seven-day activity.",
     color: "from-blue-500/20 to-indigo-500/10",
     accent: "#6366f1",
+  },
+  {
+    icon: Ghost,
+    title: "Ghost Click Detection",
+    desc: "Identify crawler and social-preview traffic, plus headless and automated browser signals, so bots do not inflate your human click count.",
+    color: "from-amber-500/20 to-orange-500/10",
+    accent: "#f59e0b",
   },
   {
     icon: LockKeyhole,
@@ -41,8 +52,8 @@ const FEATURES = [
     icon: Zap,
     title: "Fast Redirects",
     desc: "Send visitors to the destination after checking expiry, click limits, disabled status, and optional password protection.",
-    color: "from-amber-500/20 to-orange-500/10",
-    accent: "#f59e0b",
+    color: "from-cyan-500/20 to-sky-500/10",
+    accent: "#06b6d4",
   },
   {
     icon: Globe,
@@ -55,8 +66,29 @@ const FEATURES = [
     icon: CalendarClock,
     title: "Expiry & Click Limits",
     desc: "Set a time limit or maximum number of visits so temporary links stop working automatically.",
-    color: "from-cyan-500/20 to-sky-500/10",
-    accent: "#06b6d4",
+    color: "from-fuchsia-500/20 to-pink-500/10",
+    accent: "#d946ef",
+  },
+  {
+    icon: Power,
+    title: "Link Management",
+    desc: "Keep control after publishing: disable a link instantly or remove it from your workspace when it is no longer needed.",
+    color: "from-orange-500/20 to-amber-500/10",
+    accent: "#f97316",
+  },
+  {
+    icon: SunMoon,
+    title: "Light & Dark Mode",
+    desc: "Switch between comfortable light and dark themes, with your preference remembered for the next visit.",
+    color: "from-slate-500/20 to-violet-500/10",
+    accent: "#a78bfa",
+  },
+  {
+    icon: QrCode,
+    title: "QR Code Sharing",
+    desc: "Generate a scannable QR code for every short link and download it as a PNG for print, presentations, or social posts.",
+    color: "from-cyan-500/20 to-blue-500/10",
+    accent: "#22d3ee",
   },
 ]
 

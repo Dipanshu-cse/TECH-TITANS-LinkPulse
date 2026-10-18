@@ -16,6 +16,7 @@ import {
 import GlassCard from "../ui-custom/GlassCard"
 import AnimatedCounter from "../ui-custom/AnimatedCounter"
 import { supabase } from "../../supabase"
+import CompactAnalytics from "./CompactAnalytics"
 
 export default function ShortenerSection({
   sectionRef,
@@ -38,6 +39,8 @@ export default function ShortenerSection({
   onCopy,
   onToggleDisable,
   onDelete,
+  analyticsRef,
+  onViewLinks,
 }) {
   return (
     <section
@@ -54,6 +57,9 @@ export default function ShortenerSection({
           </div>
           <h2 className="section-title">Create your secure LinkPulse URL.</h2>
           <p className="section-sub mx-auto">Paste, customize, and launch your link in under 3 seconds.</p>
+          <button type="button" onClick={onViewLinks} className="mt-5 inline-flex items-center gap-2 text-xs text-violet-400 transition hover:text-violet-300">
+            View your shortened links <ArrowUpRight className="size-3.5" />
+          </button>
         </div>
 
         {/* ── Shortener Form Card ─────────────────────────────────────────── */}
@@ -163,6 +169,12 @@ export default function ShortenerSection({
 
             </div>
           </div>
+          <LinkPreview
+            alias={alias}
+            passwordProtected={passwordProtected}
+            expiresAt={expiresAt}
+            clickLimit={clickLimit}
+          />
         </GlassCard>
         {errorMessage && (
           <div
@@ -180,7 +192,7 @@ export default function ShortenerSection({
             iconBg="bg-emerald-500/10"
             value={<AnimatedCounter value={totalClicks} />}
             label="Verified Clicks"
-            sub="Live tracked on your links"
+            sub="Human activity after bot filtering"
           />
           <StatsCard
             icon={<Link2 className="size-5 text-blue-400" />}
@@ -204,8 +216,10 @@ export default function ShortenerSection({
           </GlassCard>
         </div>
 
+        <CompactAnalytics analyticsRef={analyticsRef} />
+
         {/* ── Links Table ─────────────────────────────────────────────────── */}
-        <div ref={tableRef}>
+        <div ref={tableRef} id="your-links" className="scroll-mt-24">
           <LinksTable
             links={links}
             loading={loading}
@@ -217,6 +231,24 @@ export default function ShortenerSection({
         </div>
       </div>
     </section>
+  )
+}
+
+function LinkPreview({ alias, passwordProtected, expiresAt, clickLimit }) {
+  const previewAlias = alias.trim() || "your-alias"
+  return (
+    <div className="link-preview">
+      <div>
+        <p className="link-preview-label">LIVE LINK PREVIEW</p>
+        <p className="link-preview-url"><span>go.lp/</span>{previewAlias}</p>
+      </div>
+      <div className="link-preview-tags">
+        {passwordProtected && <span><LockKeyhole className="size-3" /> Protected</span>}
+        {expiresAt && <span><Calendar className="size-3" /> Expiry set</span>}
+        {clickLimit && <span><Hash className="size-3" /> {clickLimit} clicks</span>}
+        {!passwordProtected && !expiresAt && !clickLimit && <span className="link-preview-ready"><Check className="size-3" /> Ready to publish</span>}
+      </div>
+    </div>
   )
 }
 
@@ -237,7 +269,11 @@ function ShortenerForm({ longUrl, setLongUrl, alias, setAlias, aliasError, setAl
           onChange={e => setLongUrl(e.target.value)}
           placeholder="https://your-very-long-link.com/path?with=params"
           className="form-input"
+          aria-describedby="destination-help"
         />
+        <span id="destination-help" className="text-[10px] normal-case tracking-normal" style={{ color: "var(--text-faint)" }}>
+          HTTP and HTTPS destinations only
+        </span>
       </label>
 
       {/* Custom Alias */}
@@ -253,6 +289,8 @@ function ShortenerForm({ longUrl, setLongUrl, alias, setAlias, aliasError, setAl
               value={alias}
               onChange={e => { setAlias(e.target.value); if (aliasError) setAliasError("") }}
               placeholder="your-alias"
+              pattern="[a-zA-Z0-9_-]{3,40}"
+              title="Use 3–40 letters, numbers, hyphens, or underscores."
               className="min-w-0 flex-1 bg-transparent pl-1 outline-none text-sm"
               style={{ color: "var(--text-primary)" }}
             />
@@ -315,7 +353,7 @@ function AnalyticsPopover({ linkId, shortCode, anchorEl, onClose }) {
     async function fetchClicks() {
       const { data: rows, error } = await supabase
         .from("clicks")
-        .select("device_type, created_at")
+        .select("device_type, created_at, is_ghost, is_bot, counted, traffic_class")
         .eq("link_id", linkId)
         .order("created_at", { ascending: false })
         .limit(200)
@@ -323,6 +361,9 @@ function AnalyticsPopover({ linkId, shortCode, anchorEl, onClose }) {
       if (!error && rows) {
         const mobile = rows.filter(r => r.device_type === "mobile").length
         const desktop = rows.filter(r => r.device_type === "desktop").length
+        const ghost = rows.filter(r => r.is_ghost).length
+        const bots = rows.filter(r => r.is_bot).length
+        const verified = rows.filter(r => r.counted).length
         const total = rows.length
         const days = []
         for (let i = 6; i >= 0; i--) {
@@ -334,7 +375,7 @@ function AnalyticsPopover({ linkId, shortCode, anchorEl, onClose }) {
           ).length
           days.push({ label, count })
         }
-        setData({ total, mobile, desktop, days })
+        setData({ total, mobile, desktop, ghost, bots, verified, days })
       }
       setLoading(false)
     }
@@ -443,6 +484,9 @@ function AnalyticsPopover({ linkId, shortCode, anchorEl, onClose }) {
             <span className="font-medium" style={{ color: "var(--text-primary)" }}>{data.total}</span>
             {" "}total click{data.total !== 1 ? "s" : ""}
           </p>
+          <p className="mt-1 text-center text-[10px]" style={{ color: "var(--text-faint)" }}>
+            {data.verified} verified · {data.ghost} ghost · {data.bots} bot/preview
+          </p>
         </>
       )}
     </div>,
@@ -454,6 +498,21 @@ function AnalyticsPopover({ linkId, shortCode, anchorEl, onClose }) {
 function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete }) {
   // openPopover = { id, anchorEl } of the open analytics popover, or null
   const [openPopover, setOpenPopover] = useState(null)
+  const [query, setQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const filteredLinks = links.filter(link => {
+    const search = query.trim().toLowerCase()
+    const matchesQuery = !search
+      || link.short_code.toLowerCase().includes(search)
+      || link.original_url.toLowerCase().includes(search)
+    const isExpired = link.expires_at && new Date(link.expires_at) < new Date()
+    const isLimitHit = link.click_limit !== null && link.click_limit !== undefined
+      && (link.clicks_count || 0) >= link.click_limit
+    const status = link.is_disabled || isExpired || isLimitHit
+      ? "inactive"
+      : link.password_hash ? "protected" : "active"
+    return matchesQuery && (statusFilter === "all" || status === statusFilter)
+  })
 
   return (
     <GlassCard className="mt-4 overflow-hidden">
@@ -473,6 +532,32 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete 
         <div className="flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1">
           <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <span className="text-[10px] uppercase tracking-widest text-emerald-400/70">Live</span>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 border-b px-6 py-4 md:flex-row md:items-center md:justify-between md:px-8" style={{ borderColor: "var(--border)" }}>
+        <input
+          value={query}
+          onChange={event => setQuery(event.target.value)}
+          placeholder="Search links or destinations..."
+          aria-label="Search links"
+          className="h-10 rounded-xl border px-3 text-xs outline-none transition md:w-72"
+          style={{ borderColor: "var(--input-border)", background: "var(--input-bg)", color: "var(--text-primary)" }}
+        />
+        <div className="flex flex-wrap gap-2">
+          {[["all", "All"], ["active", "Active"], ["protected", "Protected"], ["inactive", "Inactive"]].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setStatusFilter(value)}
+              className="rounded-full border px-3 py-1.5 text-[10px] uppercase tracking-wider transition"
+              style={statusFilter === value
+                ? { borderColor: "rgba(139,92,246,0.40)", background: "rgba(139,92,246,0.10)", color: "#a78bfa" }
+                : { borderColor: "var(--border)", color: "var(--text-muted)" }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -514,8 +599,14 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete 
                 </td>
               </tr>
 
+            ) : filteredLinks.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="px-6 py-12 text-center text-xs" style={{ color: "var(--text-muted)" }}>
+                  No links match these filters.
+                </td>
+              </tr>
             ) : (
-              links.map(link => {
+              filteredLinks.map(link => {
                 const directUrl = `${window.location.origin}/${link.short_code}`
                 const displayBrand = `go.lp/${link.short_code}`
                 const isExpired = link.expires_at && new Date(link.expires_at) < new Date()

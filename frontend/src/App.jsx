@@ -86,6 +86,9 @@ export default function LinkPulsePage() {
   const shortenerRef = useRef(null)
   const scrollToShortener = () => shortenerRef.current?.scrollIntoView({ behavior: "smooth" })
   const scrollToFeatures = () => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })
+  const analyticsRef = useRef(null)
+  const openAnalytics = () => analyticsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  const viewLinks = () => linkManager.tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
 
   // ── Redirect Screen ───────────────────────────────────────────────────────
   // Agar koi shortened link open kara ja raha hai to sirf loading screen dikhao
@@ -109,6 +112,7 @@ export default function LinkPulsePage() {
       {/* ── Mobile navigation bar ─────────────────────────────────────────── */}
       <MobileNav
         onGetStarted={scrollToShortener}
+        onOpenAnalytics={openAnalytics}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
@@ -123,6 +127,7 @@ export default function LinkPulsePage() {
         videoReady={videoReady}
         theme={theme}
         onScrollDown={scrollToShortener}
+        onViewLinks={viewLinks}
         onScrollFeatures={scrollToFeatures}
       />
 
@@ -130,6 +135,8 @@ export default function LinkPulsePage() {
       <ShortenerSection
         sectionRef={shortenerRef}
         tableRef={linkManager.tableRef}
+        analyticsRef={analyticsRef}
+        onViewLinks={viewLinks}
         links={linkManager.links}
         loading={linkManager.loading}
         totalClicks={linkManager.totalClicks}
@@ -156,8 +163,7 @@ export default function LinkPulsePage() {
         setClickLimit={linkManager.setClickLimit}
         errorMessage={linkManager.errorMessage || linkManager.redirectError}
       />
-
-      {/* 3. Features Section — 6 feature cards grid */}
+      {/* 3. Features Section — feature cards grid */}
       <FeaturesSection />
 
       {/* 4. How It Works Section — 3 steps with connector line */}

@@ -14,9 +14,36 @@
 //   onClose     — modal band karne ka function
 //   onViewTable — "View in table" button — modal close + table pe scroll
 
-import { Check, Copy, ExternalLink, LockKeyhole, X } from "lucide-react"
+import { useEffect, useState } from "react"
+import QRCode from "qrcode"
+import { Check, Copy, Download, ExternalLink, LockKeyhole, X } from "lucide-react"
 
 export default function CreatedModal({ modalData, copied, onCopy, onClose, onViewTable }) {
+  const [qrCode, setQrCode] = useState("")
+  const [qrError, setQrError] = useState("")
+  const [qrFor, setQrFor] = useState("")
+
+  useEffect(() => {
+    let active = true
+    const workingUrl = modalData?.workingUrl || ""
+    QRCode.toDataURL(workingUrl, {
+      width: 320,
+      margin: 2,
+      errorCorrectionLevel: "M",
+      color: { dark: "#11152B", light: "#FFFFFF" },
+    })
+      .then(dataUrl => {
+        if (active) {
+          setQrCode(dataUrl)
+          setQrFor(workingUrl)
+        }
+      })
+      .catch(() => {
+        if (active) setQrError("QR code unavailable")
+      })
+    return () => { active = false }
+  }, [modalData?.workingUrl])
+
   // Agar modalData null hai to modal render hi mat karo
   if (!modalData) return null
 
@@ -56,10 +83,10 @@ export default function CreatedModal({ modalData, copied, onCopy, onClose, onVie
           </div>
 
           {/* Title */}
-          <h3 className="text-xl font-light text-white">Your link is live 🚀</h3>
+          <h3 className="text-xl font-light" style={{ color: "var(--text-primary)" }}>Your link is live 🚀</h3>
 
           {/* Original URL dikhao (truncated) */}
-          <p className="mt-1 truncate text-xs text-white/35">
+          <p className="mt-1 truncate text-xs" style={{ color: "var(--text-muted)" }}>
             Redirects to: {modalData.originalUrl}
           </p>
 
@@ -71,9 +98,9 @@ export default function CreatedModal({ modalData, copied, onCopy, onClose, onVie
           )}
 
           {/* ── Short link display + action buttons ───────────────────────── */}
-          <div className="mt-5 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-3 backdrop-blur-sm">
+          <div className="mt-5 flex items-center justify-between rounded-2xl border p-3 backdrop-blur-sm" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
             {/* Branded display URL — monospace font mein */}
-            <span className="truncate font-mono text-xs text-white/70">
+            <span className="truncate font-mono text-xs" style={{ color: "var(--text-secondary)" }}>
               {modalData.displayUrl}
             </span>
 
@@ -83,7 +110,8 @@ export default function CreatedModal({ modalData, copied, onCopy, onClose, onVie
                 href={modalData.workingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-xl border border-white/10 bg-white/5 p-2 text-white/40 hover:text-white/80 transition-colors"
+                className="rounded-xl border p-2 transition-colors"
+                style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text-muted)" }}
               >
                 <ExternalLink className="size-3.5" />
               </a>
@@ -102,12 +130,33 @@ export default function CreatedModal({ modalData, copied, onCopy, onClose, onVie
             </div>
           </div>
 
+          <div className="mt-5 flex flex-col items-center gap-4 rounded-2xl border p-4 sm:flex-row" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+            <div className="qr-preview shrink-0">
+              {qrCode && qrFor === modalData.workingUrl ? <img src={qrCode} alt={`QR code for ${modalData.displayUrl}`} /> : <span>{qrError || "Generating QR..."}</span>}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Scan to open your link</p>
+              <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>Share the QR code in presentations, print, or social posts.</p>
+              {qrCode && qrFor === modalData.workingUrl && (
+                <a
+                  href={qrCode}
+                  download={`linkpulse-${modalData.displayUrl.replace("go.lp/", "")}.png`}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs transition hover:bg-violet-500/10"
+                  style={{ borderColor: "var(--border-strong)", color: "var(--text-secondary)" }}
+                >
+                  <Download className="size-3.5" /> Download QR
+                </a>
+              )}
+            </div>
+          </div>
+
           {/* ── Bottom actions ─────────────────────────────────────────────── */}
           <div className="mt-5 flex justify-end gap-2">
             {/* "View in table" — modal close karo aur table pe scroll karo */}
             <button
               onClick={onViewTable}
-              className="rounded-xl border border-white/10 px-4 py-2 text-xs text-white/40 hover:bg-white/5 hover:text-white/70 transition-colors"
+              className="rounded-xl border px-4 py-2 text-xs transition-colors hover:bg-violet-500/10"
+              style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
             >
               View in table
             </button>

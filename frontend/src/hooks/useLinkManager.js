@@ -8,7 +8,8 @@
 //   (* added via supabase_migration.sql)
 //
 // Schema (clicks table):
-//   id, created_at, link_id, ip_address, user_agent, device_type, country
+//   id, created_at, link_id, user_agent, device_type, is_ghost, is_bot,
+//   source_platform, traffic_class, validation_reasons, counted
 //
 // Ye hook kya karta hai:
 //   1. VISITOR ID generate/retrieve karta hai (localStorage se)
@@ -25,6 +26,45 @@ async function hashPassword(password) {
   const bytes = new TextEncoder().encode(password)
   const digest = await crypto.subtle.digest("SHA-256", bytes)
   return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("")
+}
+
+function classifyVisitor(userAgent, referrer) {
+  const normalizedAgent = userAgent.toLowerCase()
+  const botPattern = /bot|crawler|spider|slurp|facebookexternalhit|facebot|whatsapp|telegrambot|discordbot|skypeuripreview|linkedinbot|pinterest|slackbot|twitterbot|google-inspectiontool|bingpreview|headlesschrome|prerender/i
+  const automationSignals = [
+    navigator.webdriver ? "webdriver" : null,
+    /HeadlessChrome|PhantomJS|Electron/i.test(userAgent) ? "headless_runtime" : null,
+    "domAutomation" in window || "_Selenium_IDE_Recorder" in window ? "automation_global" : null,
+    navigator.languages?.length === 0 ? "missing_languages" : null,
+    navigator.plugins?.length === 0 && !/Mobi|Android|iPhone|iPad/i.test(userAgent) ? "missing_plugins" : null,
+  ].filter(Boolean)
+  const agentSignal = normalizedAgent.match(botPattern)?.[0]
+  const isBot = Boolean(agentSignal || automationSignals.length)
+  const sourceText = `${referrer} ${userAgent}`.toLowerCase()
+  const source = sourceText.includes("whatsapp") ? "WhatsApp"
+    : sourceText.includes("telegram") ? "Telegram"
+      : sourceText.includes("discord") ? "Discord"
+        : sourceText.includes("facebook") || sourceText.includes("instagram") ? "Meta"
+          : sourceText.includes("linkedin") ? "LinkedIn"
+            : sourceText.includes("pinterest") ? "Pinterest"
+              : sourceText.includes("slack") ? "Slack"
+                : referrer ? "Referral" : "Direct"
+  const previewSource = ["WhatsApp", "Telegram", "Discord", "Meta", "LinkedIn", "Pinterest", "Slack"].includes(source)
+
+  return {
+    isBot,
+    botReason: isBot ? (agentSignal || automationSignals.join(", ")) : null,
+    source,
+    trafficClass: isBot ? (previewSource ? "preview" : "bot") : "verified",
+    validationReasons: [
+      "link_found",
+      "status_active",
+      "not_expired",
+      "within_click_limit",
+      isBot ? `automation:${agentSignal || automationSignals.join(",")}` : "browser_signal_clear",
+      "destination_allowed",
+    ],
+  }
 }
 
 export function useLinkManager() {
@@ -86,7 +126,7 @@ export function useLinkManager() {
   // Analytics ke liye clicks table mein ek row bhi insert karo.
   useEffect(() => {
     const slug = window.location.pathname.replace(/^\/+/, "").trim()
-    if (!slug) return
+    if (!slug || slug === "analytics") return
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRedirecting(true)
@@ -162,28 +202,60 @@ export function useLinkManager() {
       // Analytics: clicks table mein row insert karo (device_type, user_agent capture)
       const ua = navigator.userAgent
       const deviceType = /Mobi|Android|iPhone|iPad/i.test(ua) ? "mobile" : "desktop"
-      const { error: clickError } = await supabase.from("clicks").insert([{
-        link_id: data.id,
-        user_agent: ua.substring(0, 255), // truncate agar bahut lamba ho
-        device_type: deviceType,
-      }])
+      const visitorClassification = classifyVisitor(ua, document.referrer)
+      const ghostKey = `linkpulse_last_click_${data.id}`
+      const previousClick = Number(localStorage.getItem(ghostKey) || 0)
+      const clickTime = Date.now()
+      const isGhost = clickTime - previousClick < 1500
+      const geometrySignal = window.outerWidth === 0 || window.outerHeight === 0 || window.innerWidth === 0
+      if (geometrySignal && !visitorClassification.isBot) {
+        visitorClassification.isBot = true
+        visitorClassification.trafficClass = "bot"
+        visitorClassification.botReason = "browser_geometry"
+        visitorClassification.validationReasons[4] = "automation:browser_geometry"
+      }
+
+      const { data: clickResult, error: clickError } = await supabase.rpc("record_click_event", {
+        p_link_id: data.id,
+        p_user_agent: ua.substring(0, 255),
+        p_device_type: deviceType,
+        p_is_ghost: isGhost,
+        p_is_bot: visitorClassification.isBot,
+        p_bot_reason: visitorClassification.botReason,
+        p_source_platform: visitorClassification.source,
+        p_traffic_class: visitorClassification.trafficClass,
+        p_validation_reasons: visitorClassification.validationReasons,
+      })
+      localStorage.setItem(ghostKey, String(clickTime))
 
       // clicks_count bhi update karo (denormalized counter — fast reads ke liye)
       if (clickError) {
         console.error("Click analytics error:", clickError.message)
+        setRedirectError("We could not securely record this visit. Please try again.")
+        setRedirecting(false)
+        return
+      } else if (!visitorClassification.isBot && !clickResult?.counted) {
+        setRedirectError(clickResult?.status === "limit_reached"
+          ? "This link has reached its maximum click limit."
+          : "This link could not be counted safely. Please try again.")
+        setRedirecting(false)
+        return
       }
-
-      const { error: countError } = await supabase
-        .from("links")
-        .update({ clicks_count: (data.clicks_count || 0) + 1 })
-        .eq("id", data.id)
-      if (countError) console.error("Click counter error:", countError.message)
 
       // Destination pe redirect karo
       const destination =
         data.original_url.startsWith("http://") || data.original_url.startsWith("https://")
           ? data.original_url
           : `https://${data.original_url}`
+
+      try {
+        const destinationUrl = new URL(destination)
+        if (!["http:", "https:"].includes(destinationUrl.protocol)) throw new Error("Unsupported destination protocol")
+      } catch {
+        setRedirectError("This link has an invalid destination.")
+        setRedirecting(false)
+        return
+      }
 
       window.location.href = destination
     }
@@ -211,13 +283,48 @@ export function useLinkManager() {
 
   useEffect(() => { fetchLinks() }, [fetchLinks])
 
+  useEffect(() => {
+    const refresh = () => { fetchLinks() }
+    const interval = window.setInterval(refresh, 15000)
+    window.addEventListener("focus", refresh)
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener("focus", refresh)
+    }
+  }, [fetchLinks])
+
   // ── Handle Generate — naya link create karna ─────────────────────────────
   const handleGenerate = async (event) => {
     event.preventDefault()
     setAliasError("")
     setErrorMessage("")
 
-    if (!longUrl.trim()) return
+    const normalizedUrl = longUrl.trim()
+    if (!normalizedUrl) return
+
+    let destinationUrl
+    try {
+      destinationUrl = new URL(normalizedUrl)
+    } catch {
+      setErrorMessage("Enter a valid destination URL.")
+      return
+    }
+    if (!["http:", "https:"].includes(destinationUrl.protocol)) {
+      setErrorMessage("Only HTTP and HTTPS destinations are supported.")
+      return
+    }
+
+    const normalizedAlias = alias.trim().replace(/\s+/g, "").toLowerCase()
+    if (normalizedAlias && !/^[a-z0-9_-]{3,40}$/.test(normalizedAlias)) {
+      setAliasError("Use 3–40 letters, numbers, hyphens, or underscores.")
+      return
+    }
+
+    const parsedClickLimit = clickLimit.trim() ? Number(clickLimit) : null
+    if (parsedClickLimit !== null && (!Number.isInteger(parsedClickLimit) || parsedClickLimit < 1)) {
+      setErrorMessage("Click limit must be a whole number greater than zero.")
+      return
+    }
 
     if (passwordProtected && !password.trim()) {
       setErrorMessage("Enter a protection password or turn off password protection.")
@@ -227,22 +334,22 @@ export function useLinkManager() {
     setGenerating(true)
 
     // Custom alias ya random 6-char slug
-    const slug = alias.trim()
-      ? alias.trim().replace(/\s+/g, "").toLowerCase()
+    const slug = normalizedAlias
+      ? normalizedAlias
       : Math.random().toString(36).substring(2, 8)
 
     const isProtected = Boolean(passwordProtected && password.trim().length > 0)
 
     const passwordHash = isProtected ? await hashPassword(password.trim()) : null
     const newRecord = {
-      original_url: longUrl.trim(),
+      original_url: destinationUrl.toString(),
       short_code: slug,
       clicks_count: 0,
       is_disabled: false,
       visitor_id: visitorId,
       password_hash: passwordHash,
       expires_at: expiresAt.trim() ? new Date(expiresAt.trim()).toISOString() : null,
-      click_limit: clickLimit.trim() ? parseInt(clickLimit.trim(), 10) : null,
+      click_limit: parsedClickLimit,
     }
 
     const { data, error } = await supabase.from("links").insert([newRecord]).select()
@@ -366,6 +473,7 @@ export function useLinkManager() {
     tableRef,
     // Functions
     handleGenerate,
+    refreshLinks: fetchLinks,
     copyLink,
     toggleDisable,
     deleteLink,

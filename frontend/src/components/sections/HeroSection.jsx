@@ -4,7 +4,7 @@
 //   - Background video (blur ke saath)
 //   - Floating URL pills (decorative)
 //   - Main headline "Links That Think For You."
-//   - CTA buttons (Shorten a Link, See Features)
+//   - CTA buttons (Shorten a Link, View Links, See Features)
 //   - Feature pillars (click tracking, password protection, expiry rules)
 //   - Scroll indicator button (neeche arrow)
 //   - Mouse parallax effect (hero glass layer mouse ke saath thoda tilt hoti hai)
@@ -14,10 +14,11 @@
 //   videoReady     — video zoom-in shuru karna hai ya nahi
 //   theme          — "dark" ya "light" (video filter ke liye)
 //   onScrollDown   — shortener section pe scroll karne ke liye function
+//   onViewLinks    — links table pe scroll karne ke liye function
 //   onScrollFeatures — features section pe scroll karne ke liye function
 
 import { useEffect, useRef } from "react"
-import { ArrowDown, ArrowUpRight, ChevronRight, Sparkles } from "lucide-react"
+import { Activity, ArrowDown, ArrowUpRight, CheckCircle2, ChevronRight, Filter, Sparkles } from "lucide-react"
 import FloatingPill from "../ui-custom/FloatingPill"
 
 export default function HeroSection({
@@ -25,6 +26,7 @@ export default function HeroSection({
   videoReady,
   theme,
   onScrollDown,
+  onViewLinks,
   onScrollFeatures,
 }) {
   // heroRef = poora hero section element (parallax calculation ke liye)
@@ -110,6 +112,29 @@ export default function HeroSection({
       <FloatingPill text="go.lp/investor-deck" delay={2.4} x={72} y={58} />
       <FloatingPill text="go.lp/waitlist"      delay={0.8} x={82} y={76} className="floating-pill-hide-tablet" />
 
+      <div
+        className="hero-signal-preview"
+        style={{
+          opacity: heroReady ? 1 : 0,
+          transform: heroReady ? "translateY(0) rotate(1deg)" : "translateY(18px) rotate(1deg)",
+        }}
+      >
+        <div className="hero-signal-header">
+          <span className="hero-signal-live"><span /> LIVE SIGNAL</span>
+          <Activity className="size-4" />
+        </div>
+        <div className="hero-signal-url">go.lp/launch</div>
+        <div className="hero-signal-rule" />
+        <div className="hero-signal-metrics">
+          <div><strong>1,284</strong><span>verified visits</span></div>
+          <div><strong>92%</strong><span>traffic quality</span></div>
+        </div>
+        <div className="hero-signal-status">
+          <span><CheckCircle2 className="size-3.5" /> Protected link</span>
+          <span><Filter className="size-3.5" /> 43 bots filtered</span>
+        </div>
+      </div>
+
       {/* ── Main hero content — headline, subtext, buttons ───────────────── */}
       <div className="hero-content relative z-[2] w-full px-6 pb-16 md:px-14 lg:px-20">
         <div className="max-w-5xl">
@@ -166,6 +191,10 @@ export default function HeroSection({
             {/* Primary button — shortener section pe le jaata hai */}
             <button onClick={onScrollDown} className="cta-primary">
               Shorten a Link <ArrowUpRight className="size-4" />
+            </button>
+
+            <button onClick={onViewLinks} className="cta-ghost">
+              View your shortened links <ArrowUpRight className="size-4" />
             </button>
 
             {/* Ghost button — features section pe le jaata hai */}

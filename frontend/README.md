@@ -1,8 +1,10 @@
 # LinkPulse
 
 LinkPulse is a client-side URL shortener built with React, Vite, and Supabase.
-It supports custom aliases, password protection, expiry dates, click limits,
-device-aware click tracking, and a seven-day analytics view.
+It supports validated custom aliases, password protection, expiry dates, atomic
+click limits, device-aware click tracking, bot/preview filtering, ghost-click
+classification, QR sharing for generated links, and a live traffic-quality
+analytics view.
 
 ## Development
 
@@ -24,8 +26,9 @@ npm run build
    editor. It creates missing `links` and `clicks` tables, adds the required
    columns and indexes, enables RLS, and installs the policies used by the
    anonymous client.
-2. If the tables already exist, the migration is safe to run again: columns,
-   indexes, and policies are installed idempotently.
+2. If the tables already exist, run the full migration again: columns, indexes,
+   policies, and the atomic `record_click_event` function are installed
+   idempotently.
 
 Passwords created by the current client are stored as SHA-256 hashes in
 `password_hash`; never store or migrate plaintext passwords into that column.
@@ -39,3 +42,10 @@ It is not an authenticated account, so links are not automatically available
 on another device or browser. The migration's permissive policies are intended
 for this demo/no-account model; add Supabase Auth or a server-side API before
 using it for private production data.
+
+Redirect validation runs before navigation and is recorded through the
+`record_click_event` Supabase RPC. The app labels known crawlers, social
+previews, headless/automation signals, rapid repeats, and verified browser
+visits separately. A server-side redirect or Edge Function is still required
+for HTTP-level crawler detection when a preview service never executes
+JavaScript.

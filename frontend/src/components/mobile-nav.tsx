@@ -9,16 +9,18 @@ const NAV_LINKS = [
   { label: "Features", href: "#features" },
   { label: "How It Works", href: "#how-it-works" },
   { label: "Click Tracking", href: "#shortener" },
-  { label: "Click Analytics", href: "#shortener" },
+  { label: "Your Links", href: "#your-links" },
+  { label: "Click Analytics", href: "#analytics" },
 ]
 
 interface MobileNavProps {
   onGetStarted: () => void
+  onOpenAnalytics: () => void
   theme: string
   onToggleTheme: () => void
 }
 
-export function MobileNav({ onGetStarted, theme, onToggleTheme }: MobileNavProps) {
+export function MobileNav({ onGetStarted, onOpenAnalytics, theme, onToggleTheme }: MobileNavProps) {
   const [open, setOpen] = useState(false)
   const isDark = theme === "dark"
   const close = () => setOpen(false)
@@ -46,7 +48,7 @@ export function MobileNav({ onGetStarted, theme, onToggleTheme }: MobileNavProps
 
           <div className="hidden md:flex items-center gap-7">
             {NAV_LINKS.map(link => (
-              <a key={link.label} href={link.href} className="text-xs tracking-wide no-underline transition-colors"
+              <a key={link.label} href={link.href} onClick={link.label === "Click Analytics" ? (event) => { event.preventDefault(); onOpenAnalytics() } : undefined} className="text-xs tracking-wide no-underline transition-colors"
                 style={{ color: "var(--text-muted)" }}>
                 {link.label}
               </a>
@@ -89,7 +91,7 @@ export function MobileNav({ onGetStarted, theme, onToggleTheme }: MobileNavProps
           <div className="rounded-2xl px-2 py-2 flex flex-col gap-0.5"
             style={{ border: "1px solid var(--nav-border)", background: isDark ? "rgba(5,5,7,0.95)" : "rgba(250,248,255,0.97)", backdropFilter: "blur(20px)" }}>
             {NAV_LINKS.map(link => (
-              <a key={link.label} href={link.href} onClick={close}
+              <a key={link.label} href={link.href} onClick={link.label === "Click Analytics" ? (event) => { event.preventDefault(); onOpenAnalytics(); close() } : close}
                 className="px-4 py-3 text-sm rounded-xl no-underline"
                 style={{ color: "var(--text-secondary)" }}>
                 {link.label}
