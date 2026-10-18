@@ -89,8 +89,8 @@ export default function LinkPulsePage() {
 
   // ── Redirect Screen ───────────────────────────────────────────────────────
   // Agar koi shortened link open kara ja raha hai to sirf loading screen dikhao
-  if (linkManager.redirecting) {
-    return <RedirectLoader />
+  if (linkManager.redirecting || linkManager.redirectError) {
+    return <RedirectLoader passwordState={linkManager.passwordState} error={linkManager.redirectError} />
   }
 
   // ── Main Page Render ──────────────────────────────────────────────────────
@@ -154,6 +154,7 @@ export default function LinkPulsePage() {
         setExpiresAt={linkManager.setExpiresAt}
         clickLimit={linkManager.clickLimit}
         setClickLimit={linkManager.setClickLimit}
+        errorMessage={linkManager.errorMessage || linkManager.redirectError}
       />
 
       {/* 3. Features Section — 6 feature cards grid */}

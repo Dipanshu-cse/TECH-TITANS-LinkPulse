@@ -4,29 +4,29 @@
 // FEATURES array neeche define hai — nayi feature add karni ho to wahan karo.
 //
 // Features list:
-//   1. GhostClick™ Bot Shield   — fake clicks filter karta hai
-//   2. Real-Time Analytics       — live click tracking
+//   1. Click Tracking            — device and seven-day activity tracking
+//   2. Click Analytics            — per-link activity summary
 //   3. Password Protection       — link lock kar sakte ho
-//   4. Instant Redirect          — fast redirect
+//   4. Fast Redirects            — validation before navigation
 //   5. Custom Aliases            — branded short links
-//   6. Smart Routing             — location/device based routing
+//   6. Expiry & Click Limits     — automatic link controls
 
-import { BarChart3, Globe, Layers, LockKeyhole, ShieldCheck, Sparkles, Zap } from "lucide-react"
+import { BarChart3, CalendarClock, Globe, LockKeyhole, MousePointerClick, Sparkles, Zap } from "lucide-react"
 
 // ── Features Data Array ───────────────────────────────────────────────────────
 // Har object mein: icon component, title, description, gradient color, accent color
 const FEATURES = [
   {
-    icon: ShieldCheck,
-    title: "GhostClick™ Bot Shield",
-    desc: "Military-grade bot detection filters fake clicks before they hit your analytics. Only real humans count.",
+    icon: MousePointerClick,
+    title: "Click Tracking",
+    desc: "Record link visits with device information and a seven-day activity view so you can understand engagement.",
     color: "from-emerald-500/20 to-teal-500/10",
     accent: "#10b981",
   },
   {
     icon: BarChart3,
-    title: "Real-Time Analytics",
-    desc: "Watch clicks stream in live. Geographic breakdowns, device types, referrer tracking — all in one dashboard.",
+    title: "Click Analytics",
+    desc: "Review total clicks, device split, and recent activity for each link in a compact dashboard.",
     color: "from-blue-500/20 to-indigo-500/10",
     accent: "#6366f1",
   },
@@ -39,22 +39,22 @@ const FEATURES = [
   },
   {
     icon: Zap,
-    title: "Instant Redirect",
-    desc: "Sub-millisecond redirects powered by edge infrastructure. Zero latency between click and destination.",
+    title: "Fast Redirects",
+    desc: "Send visitors to the destination after checking expiry, click limits, disabled status, and optional password protection.",
     color: "from-amber-500/20 to-orange-500/10",
     accent: "#f59e0b",
   },
   {
     icon: Globe,
     title: "Custom Aliases",
-    desc: "Brand your links with memorable slugs. go.linkpulse.io/your-brand — your identity, everywhere.",
+    desc: "Create memorable slugs for your links and share them from your LinkPulse site.",
     color: "from-pink-500/20 to-rose-500/10",
     accent: "#ec4899",
   },
   {
-    icon: Layers,
-    title: "Smart Routing",
-    desc: "Route users based on location, device, or time of day. One link, infinite destinations.",
+    icon: CalendarClock,
+    title: "Expiry & Click Limits",
+    desc: "Set a time limit or maximum number of visits so temporary links stop working automatically.",
     color: "from-cyan-500/20 to-sky-500/10",
     accent: "#06b6d4",
   },

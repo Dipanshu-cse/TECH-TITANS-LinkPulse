@@ -1,16 +1,41 @@
-# React + Vite
+# LinkPulse
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+LinkPulse is a client-side URL shortener built with React, Vite, and Supabase.
+It supports custom aliases, password protection, expiry dates, click limits,
+device-aware click tracking, and a seven-day analytics view.
 
-Currently, two official plugins are available:
+## Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+The production checks are:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm run lint
+npm run build
+```
 
-## Expanding the ESLint configuration
+## Supabase setup
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. Create the `links` and `clicks` tables expected by
+   [`useLinkManager.js`](./src/hooks/useLinkManager.js).
+2. Run [`supabase_migration.sql`](../supabase_migration.sql) in the Supabase SQL
+   editor.
+3. Configure Row Level Security policies for the anonymous client before
+   deploying. Redirect lookups need public read access to the minimum link
+   fields, while link-management queries must be restricted to the owner
+   identity used by the application.
+
+Passwords created by the current client are stored as SHA-256 hashes in
+`password_hash`; never store or migrate plaintext passwords into that column.
+Existing plaintext records must be recreated or migrated securely before
+enabling password-protected links.
+
+## Important limitation
+
+The current anonymous-browser workspace is tied to a browser-local visitor ID.
+It is not an authenticated account, so links are not automatically available
+on another device or browser.

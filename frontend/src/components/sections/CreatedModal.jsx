@@ -21,30 +21,34 @@ export default function CreatedModal({ modalData, copied, onCopy, onClose, onVie
   if (!modalData) return null
 
   return (
-    // Backdrop — semi-transparent blur overlay
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-md">
+    // Backdrop — clicking backdrop also closes the modal
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-md"
+      onClick={onClose}
+    >
 
-      {/* Modal card */}
-      <div className="modal-card">
+      {/* Modal card — stopPropagation so clicking inside doesn't close */}
+      <div className="modal-card" onClick={e => e.stopPropagation()}>
 
-        {/* ── Confetti dots animation — top pe colorful dots fall karte hain ── */}
+        {/* Confetti dots */}
         <div className="modal-confetti" aria-hidden="true">
-          {/* 12 confetti dots — CSS se unki positions aur colors alag alag hain */}
           {[...Array(12)].map((_, i) => (
             <span key={i} className="confetti-dot" style={{ "--i": i }} />
           ))}
         </div>
 
-        {/* Close button — top right corner mein X button */}
+        {/* Close button — z-20 so it sits above confetti layer and content */}
         <button
+          type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-full p-2 text-white/30 hover:bg-white/5 hover:text-white/70 transition-colors z-10"
+          className="absolute right-4 top-4 rounded-full p-2 transition-colors"
+          style={{ color: "var(--text-muted)", zIndex: 20 }}
         >
           <X className="size-4" />
         </button>
 
-        {/* ── Modal Content ─────────────────────────────────────────────────── */}
-        <div className="relative z-10 p-6 md:p-8">
+        {/* Modal Content */}
+        <div className="relative p-6 md:p-8" style={{ zIndex: 10 }}>
 
           {/* "Link Ready" badge — green */}
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-400">

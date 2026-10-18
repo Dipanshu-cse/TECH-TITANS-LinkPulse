@@ -1181,3 +1181,16 @@ html[data-theme="light"] input[type="password"] {
   color: #1a1630 !important;
 }
 html[data-theme="light"] input[type="password"]::placeholder { color: rgba(26,22,48,0.30) !important; }
+
+/* ── Datetime-local input — color-scheme adapts to theme ── */
+.datetime-input { color-scheme: dark; }
+html[data-theme="light"] .datetime-input {
+  color-scheme: light;
+  background: rgba(255,255,255,0.85) !important;
+  border-color: rgba(130,100,200,0.20) !important;
+  color: #1a1630 !important;
+}
+html[data-theme="light"] .datetime-input::-webkit-calendar-picker-indicator {
+  filter: invert(0.3) sepia(1) saturate(2) hue-rotate(220deg);
+  opacity: 0.7;
+}

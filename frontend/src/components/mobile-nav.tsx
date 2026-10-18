@@ -8,8 +8,8 @@ import lightThemeLogo from "../assets/linkpulse-logo-light.png"
 const NAV_LINKS = [
   { label: "Features", href: "#features" },
   { label: "How It Works", href: "#how-it-works" },
-  { label: "Bot Shield", href: "#shortener" },
-  { label: "Analytics", href: "#shortener" },
+  { label: "Click Tracking", href: "#shortener" },
+  { label: "Click Analytics", href: "#shortener" },
 ]
 
 interface MobileNavProps {

@@ -20,8 +20,8 @@ const STEPS = [
   },
   {
     num: "03",
-    title: "Go live instantly",
-    desc: "Your branded short link is live in milliseconds. Share anywhere.",
+    title: "Share and track",
+    desc: "Your short link is ready to share. Review visits, device type, expiry, and click-limit status in your table.",
   },
 ]
 

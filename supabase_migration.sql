@@ -7,7 +7,7 @@
 ALTER TABLE links
   ADD COLUMN IF NOT EXISTS visitor_id text;
 
--- 2. password_hash — stores the plain-text password for protected links
+-- 2. password_hash — stores a SHA-256 hash for protected links
 --    NULL means not protected
 ALTER TABLE links
   ADD COLUMN IF NOT EXISTS password_hash text;

@@ -6,6 +6,7 @@
 //  2. STATS CARDS        — Total Clicks, Active Links, Shield Status
 //  3. LINKS TABLE        — User ke saare links + analytics popover
 
+import { createPortal } from "react-dom"
 import { useEffect, useRef, useState } from "react"
 import {
   ArrowUpRight, BarChart2, Calendar, Check, Copy,
@@ -30,6 +31,7 @@ export default function ShortenerSection({
   password, setPassword,
   expiresAt, setExpiresAt,
   clickLimit, setClickLimit,
+  errorMessage,
   generating,
   copied,
   onSubmit,
@@ -128,12 +130,11 @@ export default function ShortenerSection({
                   value={expiresAt}
                   onChange={e => setExpiresAt(e.target.value)}
                   min={new Date().toISOString().slice(0, 16)}
-                  className="h-10 rounded-xl border px-3 text-xs outline-none transition"
+                  className="datetime-input h-10 rounded-xl border px-3 text-xs outline-none transition"
                   style={{
                     borderColor: "var(--input-border)",
                     background: "var(--input-bg)",
                     color: expiresAt ? "var(--text-primary)" : "var(--input-placeholder)",
-                    colorScheme: "dark",
                   }}
                 />
               </div>
@@ -163,6 +164,14 @@ export default function ShortenerSection({
             </div>
           </div>
         </GlassCard>
+        {errorMessage && (
+          <div
+            role="alert"
+            className="mt-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300"
+          >
+            {errorMessage}
+          </div>
+        )}
 
         {/* ── Stats Cards Row ─────────────────────────────────────────────── */}
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
@@ -184,13 +193,13 @@ export default function ShortenerSection({
             <div className="stats-icon-wrap bg-violet-500/10">
               <ShieldCheck className="size-5 text-violet-400" />
             </div>
-            <div className="mt-4 text-3xl font-light tracking-tight text-emerald-400">Active</div>
+            <div className="mt-4 text-3xl font-light tracking-tight text-emerald-400">Tracking</div>
             <div className="mt-1 text-xs uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
               Shield Status
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-[11px] text-emerald-400/60">
               <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              GhostClick™ engine running
+              Click tracking active
             </div>
           </GlassCard>
         </div>
@@ -280,13 +289,28 @@ function StatsCard({ icon, iconBg, value, label, sub }) {
 }
 
 // ─── AnalyticsPopover ──────────────────────────────────────────────────────────
-// Fetches rows from the clicks table for a given link_id and shows a breakdown.
-function AnalyticsPopover({ linkId, shortCode, onClose }) {
+// Renders via React Portal into document.body so it's never clipped by
+// table overflow. Position is computed from the trigger button's bounding rect.
+function AnalyticsPopover({ linkId, shortCode, anchorEl, onClose }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const ref = useRef(null)
+  const [pos, setPos] = useState({ top: 0, left: 0 })
+  const popRef = useRef(null)
 
-  // Fetch click details for this link
+  // Compute position from anchor button
+  useEffect(() => {
+    if (!anchorEl) return
+    const rect = anchorEl.getBoundingClientRect()
+    const popWidth = 288 // w-72
+    // Try to place below-right; clamp to viewport
+    let left = rect.right - popWidth
+    if (left < 8) left = 8
+    if (left + popWidth > window.innerWidth - 8) left = window.innerWidth - popWidth - 8
+    const frame = requestAnimationFrame(() => setPos({ top: rect.bottom + 8, left }))
+    return () => cancelAnimationFrame(frame)
+  }, [anchorEl])
+
+  // Fetch click data
   useEffect(() => {
     async function fetchClicks() {
       const { data: rows, error } = await supabase
@@ -300,20 +324,16 @@ function AnalyticsPopover({ linkId, shortCode, onClose }) {
         const mobile = rows.filter(r => r.device_type === "mobile").length
         const desktop = rows.filter(r => r.device_type === "desktop").length
         const total = rows.length
-
-        // Last 7 days — daily counts
         const days = []
         for (let i = 6; i >= 0; i--) {
           const d = new Date()
           d.setDate(d.getDate() - i)
           const label = d.toLocaleDateString("en", { weekday: "short" })
-          const count = rows.filter(r => {
-            const rd = new Date(r.created_at)
-            return rd.toDateString() === d.toDateString()
-          }).length
+          const count = rows.filter(r =>
+            new Date(r.created_at).toDateString() === d.toDateString()
+          ).length
           days.push({ label, count })
         }
-
         setData({ total, mobile, desktop, days })
       }
       setLoading(false)
@@ -321,42 +341,50 @@ function AnalyticsPopover({ linkId, shortCode, onClose }) {
     fetchClicks()
   }, [linkId])
 
-  // Close on outside click
+  // Close on outside click or Escape
   useEffect(() => {
-    function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) onClose()
+    function handleDown(e) {
+      if (popRef.current && !popRef.current.contains(e.target) &&
+          anchorEl && !anchorEl.contains(e.target)) {
+        onClose()
+      }
     }
-    document.addEventListener("mousedown", handleClick)
-    return () => document.removeEventListener("mousedown", handleClick)
-  }, [onClose])
+    function handleKey(e) { if (e.key === "Escape") onClose() }
+    document.addEventListener("mousedown", handleDown)
+    document.addEventListener("keydown", handleKey)
+    return () => {
+      document.removeEventListener("mousedown", handleDown)
+      document.removeEventListener("keydown", handleKey)
+    }
+  }, [onClose, anchorEl])
 
   const maxDay = data ? Math.max(...data.days.map(d => d.count), 1) : 1
 
-  return (
+  return createPortal(
     <div
-      ref={ref}
-      className="absolute right-0 top-full mt-2 z-50 w-72 rounded-2xl p-4 shadow-2xl"
+      ref={popRef}
       style={{
+        position: "fixed",
+        top: pos.top,
+        left: pos.left,
+        width: 288,
+        zIndex: 9999,
         background: "var(--modal-bg)",
         border: "1px solid var(--border-strong)",
-        boxShadow: "0 16px 48px var(--modal-shadow)",
+        borderRadius: 20,
+        padding: 16,
+        boxShadow: "0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,92,246,0.08)",
       }}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div>
-          <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
-            Analytics
-          </p>
+          <p className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>Analytics</p>
           <p className="text-[10px] font-mono mt-0.5" style={{ color: "var(--text-muted)" }}>
             go.lp/{shortCode}
           </p>
         </div>
-        <button
-          onClick={onClose}
-          className="p-1 rounded-lg transition-colors"
-          style={{ color: "var(--text-muted)" }}
-        >
+        <button onClick={onClose} className="p-1 rounded-lg" style={{ color: "var(--text-muted)" }}>
           <X className="size-3.5" />
         </button>
       </div>
@@ -374,63 +402,57 @@ function AnalyticsPopover({ linkId, shortCode, onClose }) {
         <>
           {/* Device split */}
           <div className="flex gap-3 mb-4">
-            <div
-              className="flex-1 flex items-center gap-2 rounded-xl p-3"
-              style={{ background: "var(--surface)" }}
-            >
-              <Smartphone className="size-4 text-violet-400 shrink-0" />
-              <div>
-                <p className="text-base font-light tabular-nums" style={{ color: "var(--text-primary)" }}>
-                  {data.mobile}
-                </p>
-                <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>Mobile</p>
+            {[
+              { icon: <Smartphone className="size-4 text-violet-400 shrink-0" />, count: data.mobile, label: "Mobile" },
+              { icon: <Monitor className="size-4 text-blue-400 shrink-0" />, count: data.desktop, label: "Desktop" },
+            ].map(({ icon, count, label }) => (
+              <div key={label} className="flex-1 flex items-center gap-2 rounded-xl p-3"
+                style={{ background: "var(--surface)" }}>
+                {icon}
+                <div>
+                  <p className="text-base font-light tabular-nums" style={{ color: "var(--text-primary)" }}>{count}</p>
+                  <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{label}</p>
+                </div>
               </div>
-            </div>
-            <div
-              className="flex-1 flex items-center gap-2 rounded-xl p-3"
-              style={{ background: "var(--surface)" }}
-            >
-              <Monitor className="size-4 text-blue-400 shrink-0" />
-              <div>
-                <p className="text-base font-light tabular-nums" style={{ color: "var(--text-primary)" }}>
-                  {data.desktop}
-                </p>
-                <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>Desktop</p>
-              </div>
-            </div>
+            ))}
           </div>
 
           {/* 7-day bar chart */}
           <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: "var(--text-faint)" }}>
             Last 7 days
           </p>
-          <div className="flex items-end gap-1 h-14">
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 56 }}>
             {data.days.map(({ label, count }) => (
-              <div key={label} className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full rounded-sm overflow-hidden" style={{ height: "40px", background: "var(--surface)" }}>
-                  <div
-                    className="w-full rounded-sm bg-gradient-to-t from-violet-600 to-blue-500 transition-all duration-500"
-                    style={{ height: `${Math.round((count / maxDay) * 100)}%`, marginTop: "auto" }}
-                  />
+              <div key={label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, height: "100%" }}>
+                <div style={{ flex: 1, width: "100%", borderRadius: 4, overflow: "hidden", background: "var(--surface)", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+                  <div style={{
+                    width: "100%",
+                    height: `${Math.round((count / maxDay) * 100)}%`,
+                    minHeight: count > 0 ? 3 : 0,
+                    background: "linear-gradient(to top, #7c3aed, #3b82f6)",
+                    borderRadius: 4,
+                    transition: "height 0.5s ease",
+                  }} />
                 </div>
-                <span className="text-[9px]" style={{ color: "var(--text-faint)" }}>{label}</span>
+                <span style={{ fontSize: 9, color: "var(--text-faint)" }}>{label}</span>
               </div>
             ))}
           </div>
 
-          {/* Total */}
           <p className="mt-3 text-center text-[10px]" style={{ color: "var(--text-muted)" }}>
-            <span className="font-medium" style={{ color: "var(--text-primary)" }}>{data.total}</span> total click{data.total !== 1 ? "s" : ""} recorded
+            <span className="font-medium" style={{ color: "var(--text-primary)" }}>{data.total}</span>
+            {" "}total click{data.total !== 1 ? "s" : ""}
           </p>
         </>
       )}
-    </div>
+    </div>,
+    document.body
   )
 }
 
 // ─── LinksTable ─────────────────────────────────────────────────────────────────
 function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete }) {
-  // openPopover = link.id whose analytics popover is open (null = none)
+  // openPopover = { id, anchorEl } of the open analytics popover, or null
   const [openPopover, setOpenPopover] = useState(null)
 
   return (
@@ -595,9 +617,12 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete 
                         {/* Analytics popover button */}
                         <button
                           type="button"
-                          onClick={() => setOpenPopover(openPopover === link.id ? null : link.id)}
+                          onClick={(e) => {
+                            const isOpen = openPopover?.id === link.id
+                            setOpenPopover(isOpen ? null : { id: link.id, anchorEl: e.currentTarget })
+                          }}
                           className="inline-flex items-center p-1.5 rounded-lg transition-colors"
-                          style={{ color: openPopover === link.id ? "#8b5cf6" : "var(--text-faint)" }}
+                          style={{ color: openPopover?.id === link.id ? "#8b5cf6" : "var(--text-faint)" }}
                           title="View analytics"
                         >
                           <BarChart2 className="size-3.5" />
@@ -631,11 +656,12 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete 
                           <Trash2 className="size-3.5" />
                         </button>
 
-                        {/* Analytics popover */}
-                        {openPopover === link.id && (
+                        {/* Analytics popover — rendered via portal, never clips */}
+                        {openPopover?.id === link.id && (
                           <AnalyticsPopover
                             linkId={link.id}
                             shortCode={link.short_code}
+                            anchorEl={openPopover.anchorEl}
                             onClose={() => setOpenPopover(null)}
                           />
                         )}

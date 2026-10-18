@@ -15,8 +15,8 @@ const FAQS = [
     answer: "LinkPulse is currently described as free for personal use, with no sign-up required.",
   },
   {
-    question: "What is GhostClick™?",
-    answer: "GhostClick™ is LinkPulse's bot-shield feature. It filters fake clicks so your click counts focus on real visitors.",
+    question: "What analytics are available?",
+    answer: "LinkPulse records visits, device type, and activity over the last seven days for each link.",
   },
   {
     question: "Can I password-protect a link?",

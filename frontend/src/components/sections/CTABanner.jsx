@@ -34,7 +34,7 @@ export default function CTABanner({ onGetStarted }) {
 
             {/* Subtitle */}
             <p className="max-w-lg text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
-              Join thousands of creators and marketers who trust LinkPulse for smarter, safer link management.
+              Create, protect, and track your links without creating an account.
             </p>
 
             {/* CTA Button — shortener section pe le jaata hai */}

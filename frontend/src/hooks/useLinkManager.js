@@ -21,6 +21,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { supabase } from "../supabase"
 
+async function hashPassword(password) {
+  const bytes = new TextEncoder().encode(password)
+  const digest = await crypto.subtle.digest("SHA-256", bytes)
+  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("")
+}
+
 export function useLinkManager() {
   // ── Form state ────────────────────────────────────────────────────────────
   const [longUrl, setLongUrl] = useState("")
@@ -38,6 +44,11 @@ export function useLinkManager() {
   const [redirecting, setRedirecting] = useState(false)
   const [copied, setCopied] = useState(null)
   const [createdModal, setCreatedModal] = useState(null)
+  // passwordState drives the password gate UI in RedirectLoader
+  // null = not needed; { resolve, error } = waiting for user input
+  const [passwordState, setPasswordState] = useState(null)
+  const [errorMessage, setErrorMessage] = useState("")
+  const [redirectError, setRedirectError] = useState("")
 
   // tableRef = links table DOM reference (modal "view in table" button ke liye)
   const tableRef = useRef(null)
@@ -89,58 +100,84 @@ export function useLinkManager() {
         .single()
 
       if (error || !data) {
-        alert("Link not found or expired.")
-        window.location.href = "/"
+        setRedirectError("This link could not be found or has expired.")
+        setRedirecting(false)
         return
       }
 
       if (data.is_disabled) {
-        alert("This link has been disabled.")
-        window.location.href = "/"
+        setRedirectError("This link has been disabled by its owner.")
+        setRedirecting(false)
         return
       }
 
       // Expiry check
       if (data.expires_at && new Date(data.expires_at) < new Date()) {
-        alert("This link has expired.")
-        window.location.href = "/"
+        setRedirectError("This link has expired.")
+        setRedirecting(false)
         return
       }
 
       // Click limit check
       if (data.click_limit !== null && data.click_limit !== undefined) {
         if ((data.clicks_count || 0) >= data.click_limit) {
-          alert("This link has reached its maximum click limit.")
-          window.location.href = "/"
+          setRedirectError("This link has reached its maximum click limit.")
+          setRedirecting(false)
           return
         }
       }
 
-      // Password check — agar password_hash column exist karta hai aur value hai
+      // Password check — show the React password gate UI instead of window.prompt
       const hasPassword = Boolean(data.password_hash && data.password_hash.trim().length > 0)
       if (hasPassword) {
-        const entered = window.prompt("This link is password protected. Enter the access password:")
-        if (!entered || entered.trim() !== data.password_hash.trim()) {
-          alert("Incorrect password or access cancelled.")
-          window.location.href = "/"
+        // Ask for password via React state — returns what the user typed
+        const entered = await new Promise((resolve) => {
+          setPasswordState({ onSubmit: resolve, error: "" })
+        })
+
+        // If they submitted an empty string, treat as cancelled
+        if (!entered || entered.trim() === "") {
+          setPasswordState(null)
+          setRedirecting(false)
           return
         }
+
+        const enteredHash = await hashPassword(entered.trim())
+        if (enteredHash !== data.password_hash.trim()) {
+          // Wrong password — show error in the gate and ask again
+          const retry = await new Promise((resolve) => {
+            setPasswordState({ onSubmit: resolve, error: "Incorrect password. Try again." })
+          })
+          if (!retry || (await hashPassword(retry.trim())) !== data.password_hash.trim()) {
+            setPasswordState(null)
+            setRedirectError("The password was incorrect.")
+            setRedirecting(false)
+            return
+          }
+        }
+        // Correct — hide the gate and proceed
+        setPasswordState(null)
       }
 
       // Analytics: clicks table mein row insert karo (device_type, user_agent capture)
       const ua = navigator.userAgent
       const deviceType = /Mobi|Android|iPhone|iPad/i.test(ua) ? "mobile" : "desktop"
-      await supabase.from("clicks").insert([{
+      const { error: clickError } = await supabase.from("clicks").insert([{
         link_id: data.id,
         user_agent: ua.substring(0, 255), // truncate agar bahut lamba ho
         device_type: deviceType,
       }])
 
       // clicks_count bhi update karo (denormalized counter — fast reads ke liye)
-      await supabase
+      if (clickError) {
+        console.error("Click analytics error:", clickError.message)
+      }
+
+      const { error: countError } = await supabase
         .from("links")
         .update({ clicks_count: (data.clicks_count || 0) + 1 })
         .eq("id", data.id)
+      if (countError) console.error("Click counter error:", countError.message)
 
       // Destination pe redirect karo
       const destination =
@@ -165,6 +202,7 @@ export function useLinkManager() {
 
     if (error) {
       console.error("Error fetching links:", error.message)
+      setErrorMessage("We could not load your links. Please refresh and try again.")
     } else if (data) {
       setLinks(data)
     }
@@ -177,11 +215,12 @@ export function useLinkManager() {
   const handleGenerate = async (event) => {
     event.preventDefault()
     setAliasError("")
+    setErrorMessage("")
 
     if (!longUrl.trim()) return
 
     if (passwordProtected && !password.trim()) {
-      alert("Please enter a protection password or uncheck the password option.")
+      setErrorMessage("Enter a protection password or turn off password protection.")
       return
     }
 
@@ -194,13 +233,14 @@ export function useLinkManager() {
 
     const isProtected = Boolean(passwordProtected && password.trim().length > 0)
 
+    const passwordHash = isProtected ? await hashPassword(password.trim()) : null
     const newRecord = {
       original_url: longUrl.trim(),
       short_code: slug,
       clicks_count: 0,
       is_disabled: false,
       visitor_id: visitorId,
-      password_hash: isProtected ? password.trim() : null,
+      password_hash: passwordHash,
       expires_at: expiresAt.trim() ? new Date(expiresAt.trim()).toISOString() : null,
       click_limit: clickLimit.trim() ? parseInt(clickLimit.trim(), 10) : null,
     }
@@ -214,6 +254,7 @@ export function useLinkManager() {
         setAliasError(`Alias "${slug}" is already taken. Try another alias.`)
       } else {
         setAliasError("Unable to save link right now. Please try again.")
+        setErrorMessage("Unable to save the link right now. Please check your connection and try again.")
         console.error("Insert error:", error)
       }
       return
@@ -244,9 +285,14 @@ export function useLinkManager() {
 
   // ── Copy Link ─────────────────────────────────────────────────────────────
   const copyLink = async (textToCopy) => {
-    await navigator.clipboard?.writeText(textToCopy)
-    setCopied(textToCopy)
-    setTimeout(() => setCopied(null), 1600)
+    try {
+      if (!navigator.clipboard) throw new Error("Clipboard unavailable")
+      await navigator.clipboard.writeText(textToCopy)
+      setCopied(textToCopy)
+      setTimeout(() => setCopied(null), 1600)
+    } catch {
+      setErrorMessage("Copying is unavailable in this browser. Copy the link manually.")
+    }
   }
 
   // ── Toggle Disable ────────────────────────────────────────────────────────
@@ -266,6 +312,7 @@ export function useLinkManager() {
       )
     } else {
       console.error("Toggle disable error:", error.message)
+      setErrorMessage("We could not update that link. Please try again.")
     }
   }
 
@@ -281,6 +328,7 @@ export function useLinkManager() {
       setLinks(prev => prev.filter(link => link.id !== linkId))
     } else {
       console.error("Delete error:", error.message)
+      setErrorMessage("We could not delete that link. Please try again.")
     }
   }
 
@@ -306,6 +354,9 @@ export function useLinkManager() {
     loading,
     generating,
     redirecting,
+    redirectError,
+    errorMessage,
+    passwordState,
     copied,
     createdModal,
     // Computed values

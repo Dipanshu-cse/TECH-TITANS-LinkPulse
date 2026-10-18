@@ -5,7 +5,7 @@
 //   - Floating URL pills (decorative)
 //   - Main headline "Links That Think For You."
 //   - CTA buttons (Shorten a Link, See Features)
-//   - Feature pillars (GHOSTCLICK™, REAL-TIME ANALYTICS, SMART ROUTING)
+//   - Feature pillars (click tracking, password protection, expiry rules)
 //   - Scroll indicator button (neeche arrow)
 //   - Mouse parallax effect (hero glass layer mouse ke saath thoda tilt hoti hai)
 //
@@ -150,8 +150,8 @@ export default function HeroSection({
               transition: "opacity .8s ease 120ms, transform .8s ease 120ms",
             }}
           >
-            LinkPulse goes beyond shortening. Arm every link with GhostClick™ Bot Shield,
-            live analytics, and smart routing — all in one blazing-fast platform.
+            LinkPulse goes beyond shortening. Create memorable links with optional
+            passwords, expiry rules, click limits, and useful visit analytics.
           </p>
 
           {/* CTA Buttons */}
@@ -179,7 +179,7 @@ export default function HeroSection({
             className="flex items-center gap-6 mt-10"
             style={{ opacity: heroReady ? 1 : 0, transition: "opacity .8s ease 280ms" }}
           >
-            {["GHOSTCLICK™", "REAL-TIME ANALYTICS", "SMART ROUTING"].map((p, i) => (
+            {["CLICK TRACKING", "PASSWORD PROTECTION", "EXPIRY RULES"].map((p, i) => (
               <div key={p} className="hero-pillar" style={{ transitionDelay: `${300 + i * 80}ms` }}>
                 <span className="pillar-dot" />
                 {p}
