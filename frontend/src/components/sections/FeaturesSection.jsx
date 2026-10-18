@@ -97,10 +97,10 @@ export default function FeaturesSection() {
               </div>
 
               {/* Feature title */}
-              <h3 className="mt-5 text-base font-medium text-white/90">{feature.title}</h3>
+              <h3 className="mt-5 text-base font-medium" style={{ color: "var(--text-primary)" }}>{feature.title}</h3>
 
               {/* Feature description */}
-              <p className="mt-2 text-sm leading-relaxed text-white/40">{feature.desc}</p>
+              <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>{feature.desc}</p>
 
               {/* Bottom accent line — hover pe visible hoti hai */}
               <div

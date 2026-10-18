@@ -30,7 +30,7 @@ export default function Footer({ theme }) {
                 alt="LinkPulse"
               />
             </div>
-            <p className="mt-2 text-xs text-white/25 max-w-xs">
+            <p className="mt-2 text-xs max-w-xs" style={{ color: "var(--text-faint)" }}>
               Next-generation URL intelligence. Shorten, protect, analyze.
             </p>
           </div>
@@ -64,7 +64,7 @@ export default function Footer({ theme }) {
             </div>
 
             {/* Copyright — year automatically current year hoga */}
-            <p className="text-[11px] text-white/15">
+            <p className="text-[11px]" style={{ color: "var(--text-faint)" }}>
               © {new Date().getFullYear()} LinkPulse
             </p>
           </div>

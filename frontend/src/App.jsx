@@ -148,6 +148,12 @@ export default function LinkPulsePage() {
         copied={linkManager.copied}
         onSubmit={linkManager.handleGenerate}
         onCopy={linkManager.copyLink}
+        onToggleDisable={linkManager.toggleDisable}
+        onDelete={linkManager.deleteLink}
+        expiresAt={linkManager.expiresAt}
+        setExpiresAt={linkManager.setExpiresAt}
+        clickLimit={linkManager.clickLimit}
+        setClickLimit={linkManager.setClickLimit}
       />
 
       {/* 3. Features Section — 6 feature cards grid */}

@@ -57,8 +57,8 @@ export default function HowItWorksSection() {
 
                 {/* Step title aur description */}
                 <div className="ml-6 md:ml-10">
-                  <h3 className="text-lg font-medium text-white/90">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-white/40">{step.desc}</p>
+                  <h3 className="text-lg font-medium" style={{ color: "var(--text-primary)" }}>{step.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>{step.desc}</p>
                 </div>
 
               </div>

@@ -22,18 +22,18 @@ export default function CTABanner({ onGetStarted }) {
           <div className="relative z-10 flex flex-col items-center gap-6 text-center">
 
             {/* "Free for personal use" badge */}
-            <div className="flex items-center gap-2 rounded-full bg-white/5 px-4 py-2 border border-white/10">
+            <div className="flex items-center gap-2 rounded-full px-4 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
               <Star className="size-3.5 fill-amber-400 text-amber-400" />
-              <span className="text-xs text-white/60">Free for personal use. No signup required.</span>
+              <span className="text-xs" style={{ color: "var(--text-secondary)" }}>Free for personal use. No signup required.</span>
             </div>
 
             {/* Main heading */}
-            <h2 className="text-4xl font-light tracking-tight md:text-5xl">
+            <h2 className="text-4xl font-light tracking-tight md:text-5xl" style={{ color: "var(--text-primary)" }}>
               Ready to pulse your <span className="gradient-text">links?</span>
             </h2>
 
             {/* Subtitle */}
-            <p className="max-w-lg text-sm text-white/40 leading-relaxed">
+            <p className="max-w-lg text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
               Join thousands of creators and marketers who trust LinkPulse for smarter, safer link management.
             </p>
 
