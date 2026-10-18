@@ -285,11 +285,16 @@ export function useLinkManager() {
 
   useEffect(() => {
     const refresh = () => { fetchLinks() }
-    const interval = window.setInterval(refresh, 15000)
+    const interval = window.setInterval(refresh, 5000)
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") refresh()
+    }
     window.addEventListener("focus", refresh)
+    document.addEventListener("visibilitychange", handleVisibility)
     return () => {
       window.clearInterval(interval)
       window.removeEventListener("focus", refresh)
+      document.removeEventListener("visibilitychange", handleVisibility)
     }
   }, [fetchLinks])
 
@@ -383,7 +388,7 @@ export function useLinkManager() {
       // Success modal dikhao
       setCreatedModal({
         workingUrl: `${window.location.origin}/${createdLink.short_code}`,
-        displayUrl: `linkpulse.io/${createdLink.short_code}`,
+        displayUrl: `${window.location.origin}/${createdLink.short_code}`,
         originalUrl: createdLink.original_url,
         isProtected: Boolean(createdLink.password_hash),
       })

@@ -348,9 +348,9 @@ function AnalyticsPopover({ linkId, shortCode, anchorEl, onClose }) {
     return () => cancelAnimationFrame(frame)
   }, [anchorEl])
 
-  // Fetch click data
+  // Fetch click data and keep an open popover current.
   useEffect(() => {
-    async function fetchClicks() {
+    async function refreshClicks() {
       const { data: rows, error } = await supabase
         .from("clicks")
         .select("device_type, created_at, is_ghost, is_bot, counted, traffic_class")
@@ -379,7 +379,13 @@ function AnalyticsPopover({ linkId, shortCode, anchorEl, onClose }) {
       }
       setLoading(false)
     }
-    fetchClicks()
+
+    const initialRefresh = window.setTimeout(refreshClicks, 0)
+    const interval = window.setInterval(refreshClicks, 5000)
+    return () => {
+      window.clearTimeout(initialRefresh)
+      window.clearInterval(interval)
+    }
   }, [linkId])
 
   // Close on outside click or Escape

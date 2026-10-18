@@ -20,6 +20,22 @@ npm run lint
 npm run build
 ```
 
+## Deploy to Vercel
+
+1. Push the repository to GitHub.
+2. In Vercel, choose **Add New Project** and import the repository.
+3. Set **Root Directory** to `frontend`.
+4. Confirm these settings:
+   - Framework preset: `Vite`
+   - Install command: `npm install`
+   - Build command: `npm run build`
+   - Output directory: `dist`
+5. Click **Deploy**.
+
+The root `vercel.json` provides the SPA fallback required for short-link
+routes such as `/your-alias`. After deployment, create links from the Vercel
+URL, not from `localhost`, so shared links are publicly reachable.
+
 ## Supabase setup
 
 1. Run [`supabase_migration.sql`](../supabase_migration.sql) in the Supabase SQL

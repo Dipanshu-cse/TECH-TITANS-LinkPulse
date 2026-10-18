@@ -50,8 +50,15 @@ export default function CompactAnalytics({ analyticsRef }) {
     // Load once and stay fresh while the workspace is open.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load()
-    const interval = window.setInterval(load, 15000)
-    return () => window.clearInterval(interval)
+    const interval = window.setInterval(load, 5000)
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") load()
+    }
+    document.addEventListener("visibilitychange", handleVisibility)
+    return () => {
+      window.clearInterval(interval)
+      document.removeEventListener("visibilitychange", handleVisibility)
+    }
   }, [load])
 
   const stats = useMemo(() => ({

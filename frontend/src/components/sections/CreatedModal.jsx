@@ -16,7 +16,7 @@
 
 import { useEffect, useState } from "react"
 import QRCode from "qrcode"
-import { Check, Copy, Download, ExternalLink, LockKeyhole, X } from "lucide-react"
+import { Check, Copy, Download, ExternalLink, LockKeyhole, Share2, X } from "lucide-react"
 
 export default function CreatedModal({ modalData, copied, onCopy, onClose, onViewTable }) {
   const [qrCode, setQrCode] = useState("")
@@ -46,6 +46,22 @@ export default function CreatedModal({ modalData, copied, onCopy, onClose, onVie
 
   // Agar modalData null hai to modal render hi mat karo
   if (!modalData) return null
+
+  const shareLink = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "LinkPulse short link",
+          text: "Open this link:",
+          url: modalData.workingUrl,
+        })
+        return
+      } catch (error) {
+        if (error.name === "AbortError") return
+      }
+    }
+    onCopy(modalData.workingUrl)
+  }
 
   return (
     // Backdrop — clicking backdrop also closes the modal
@@ -101,7 +117,7 @@ export default function CreatedModal({ modalData, copied, onCopy, onClose, onVie
           <div className="mt-5 flex items-center justify-between rounded-2xl border p-3 backdrop-blur-sm" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
             {/* Branded display URL — monospace font mein */}
             <span className="truncate font-mono text-xs" style={{ color: "var(--text-secondary)" }}>
-              {modalData.displayUrl}
+              {modalData.workingUrl}
             </span>
 
             <div className="flex items-center gap-2 shrink-0 ml-3">
@@ -126,6 +142,14 @@ export default function CreatedModal({ modalData, copied, onCopy, onClose, onVie
                 {copied === modalData.workingUrl
                   ? <><Check className="size-3.5 text-emerald-300" /> Copied!</>
                   : <><Copy className="size-3.5" /> Copy Link</>}
+              </button>
+              <button
+                type="button"
+                onClick={shareLink}
+                className="inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs transition hover:bg-violet-500/10"
+                style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+              >
+                <Share2 className="size-3.5" /> Share
               </button>
             </div>
           </div>
