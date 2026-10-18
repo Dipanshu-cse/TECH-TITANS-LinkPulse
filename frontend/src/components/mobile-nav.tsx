@@ -42,9 +42,6 @@ export function MobileNav({ onGetStarted, theme, onToggleTheme }: MobileNavProps
               alt="LinkPulse"
               className="nav-brand-logo"
             />
-            <span className="text-[13px] font-medium tracking-wide" style={{ color: "var(--text-primary)" }}>
-              LinkPulse
-            </span>
           </div>
 
           <div className="hidden md:flex items-center gap-7">
@@ -63,7 +60,7 @@ export function MobileNav({ onGetStarted, theme, onToggleTheme }: MobileNavProps
               aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
               title={isDark ? "Light mode" : "Dark mode"}
             >
-              {isDark ? <Sun className="size-[15px]" /> : <Moon className="size-[15px]" />}
+              {isDark ? <Sun className="size-3.75" /> : <Moon className="size-3.75" />}
             </button>
             <button
               onClick={onGetStarted}

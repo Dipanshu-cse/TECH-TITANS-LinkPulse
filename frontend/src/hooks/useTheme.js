@@ -13,6 +13,7 @@
 //   const { theme, toggleTheme } = useTheme()
 
 import { useCallback, useEffect, useState } from "react"
+import { flushSync } from "react-dom"
 
 // ── Initial theme decide karna ────────────────────────────────────────────────
 // Order: localStorage → OS preference → "dark" as fallback
@@ -39,9 +40,24 @@ export function useTheme() {
 
   // Toggle function — dark → light ya light → dark
   // useCallback se ye function re-render pe recreate nahi hoga (performance optimization)
-  const toggleTheme = useCallback(() => {
-    setTheme(current => current === "dark" ? "light" : "dark")
-  }, [])
+  const toggleTheme = useCallback((event) => {
+    const nextTheme = theme === "dark" ? "light" : "dark"
+    const updateTheme = () => flushSync(() => setTheme(nextTheme))
+    if (event?.clientX && event?.clientY) {
+      document.documentElement.style.setProperty("--theme-x", `${event.clientX}px`)
+      document.documentElement.style.setProperty("--theme-y", `${event.clientY}px`)
+    }
+
+    if (typeof document.startViewTransition === "function") {
+      document.startViewTransition(updateTheme)
+    } else {
+      document.documentElement.classList.add("theme-transitioning")
+      updateTheme()
+      window.setTimeout(() => {
+        document.documentElement.classList.remove("theme-transitioning")
+      }, 650)
+    }
+  }, [theme])
 
   // Hook se theme aur toggleTheme return karo
   return { theme, toggleTheme }

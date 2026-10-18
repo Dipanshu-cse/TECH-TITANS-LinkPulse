@@ -1,15 +1,8 @@
 // ─── FAQSection.jsx ──────────────────────────────────────────────────────────
 // Ye section "Frequently Asked Questions" dikhata hai.
-// Accordion style mein hai — ek question click karne pe answer expand hota hai,
-// doosra click karne pe collapse ho jaata hai.
+// Questions and answers move together in a continuously looping rail.
 // FAQS array mein saare questions aur answers hain.
 //
-// Props:
-//   openFaq     — kaunsa FAQ open hai (index number ya null)
-//   setOpenFaq  — open FAQ change karne ka function
-
-import { Minus, Plus } from "lucide-react"
-
 // ── FAQ Data Array ────────────────────────────────────────────────────────────
 // Nayi FAQ add karni ho to yahan ek object add karo.
 const FAQS = [
@@ -35,14 +28,14 @@ const FAQS = [
   },
 ]
 
-export default function FAQSection({ openFaq, setOpenFaq }) {
+export default function FAQSection() {
   return (
     <section
       id="faq"
       aria-labelledby="faq-title"
       className="faq-section relative z-10 px-6 py-24 md:px-12 lg:px-20"
     >
-      {/* Two-column layout: left = title, right = accordion list */}
+      {/* Two-column layout: left = title, right = moving answers */}
       <div className="faq-layout mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
 
         {/* ── Left Column — Title + Intro ────────────────────────────────── */}
@@ -54,45 +47,30 @@ export default function FAQSection({ openFaq, setOpenFaq }) {
           <p className="faq-intro">Quick answers about creating, protecting, and tracking your links.</p>
         </div>
 
-        {/* ── Right Column — Accordion List ─────────────────────────────── */}
+        {/* ── Right Column — Moving question and answer rail ───────────── */}
         <div className="faq-list">
-          {FAQS.map((faq, index) => {
-            const isOpen = openFaq === index
-            const answerId = `faq-answer-${index}`  // unique ID for accessibility
+          <div className="faq-marquee" aria-label="Frequently asked questions">
+            <div className="faq-marquee-track">
+              {[...FAQS, ...FAQS].map((faq, index) => {
+                const originalIndex = index % FAQS.length
+                const isDuplicate = index >= FAQS.length
 
-            return (
-              <div className="faq-item" key={faq.question}>
-                <h3 className="faq-question-heading">
-                  {/* Question button — click pe toggle hota hai */}
-                  <button
-                    aria-controls={answerId}
-                    aria-expanded={isOpen}
-                    className="faq-question"
-                    onClick={() => setOpenFaq(isOpen ? null : index)}
-                    type="button"
+                return (
+                  <div
+                    key={`${isDuplicate ? "duplicate-" : ""}${faq.question}`}
+                    aria-hidden={isDuplicate}
+                    className="faq-marquee-card"
                   >
-                    <span>{faq.question}</span>
-                    {/* Open hone pe Minus icon, band hone pe Plus icon */}
-                    {isOpen
-                      ? <Minus aria-hidden="true" className="faq-icon" />
-                      : <Plus aria-hidden="true" className="faq-icon" />}
-                  </button>
-                </h3>
-
-                {/* Answer — CSS grid trick se smoothly animate karta hai */}
-                {/* grid-template-rows: 0fr → 1fr animation se height 0 se auto hoti hai */}
-                <div
-                  aria-hidden={!isOpen}
-                  className={`faq-answer${isOpen ? " is-open" : ""}`}
-                  id={answerId}
-                >
-                  <div className="faq-answer-inner">
-                    <p>{faq.answer}</p>
+                    <span className="faq-marquee-number">0{originalIndex + 1}</span>
+                    <div className="faq-marquee-copy">
+                      <span className="faq-marquee-question">{faq.question}</span>
+                      <span className="faq-marquee-answer">{faq.answer}</span>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )
-          })}
+                )
+              })}
+            </div>
+          </div>
         </div>
 
       </div>

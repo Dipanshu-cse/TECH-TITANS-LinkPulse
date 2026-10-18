@@ -18,7 +18,7 @@ export default function CustomCursor() {
 
   // positionRef = current mouse position (ref isliye ki re-render na ho)
   const positionRef = useRef({ x: -100, y: -100 })
-  const previousPositionRef = useRef({ x: -100, y: -100 })
+  const targetPositionRef = useRef({ x: -100, y: -100 })
 
   // velocityRef = mouse kitna tez aur kis direction mein move kar raha hai
   const velocityRef = useRef({ x: 0, y: 0 })
@@ -45,8 +45,12 @@ export default function CustomCursor() {
 
     // ── Har frame mein cursor aur trail ki position update karo ────────────
     const render = () => {
-      const { x, y } = positionRef.current
+      const target = targetPositionRef.current
+      const current = positionRef.current
       const velocity = velocityRef.current
+      const x = current.x + (target.x - current.x) * 0.42
+      const y = current.y + (target.y - current.y) * 0.42
+      positionRef.current = { x, y }
 
       // Velocity smoothly zero ki taraf aati hai (damping)
       velocity.x *= 0.84
@@ -55,7 +59,7 @@ export default function CustomCursor() {
       const speed = Math.hypot(velocity.x, velocity.y)
 
       // Speed se trail ki length decide hoti hai
-      const trailLength = Math.min(12 + speed * 4.2, 180)
+      const trailLength = Math.min(18 + speed * 3.6, 150)
 
       // Angle se trail ki rotation decide hoti hai
       const angle = Math.atan2(velocity.y, velocity.x) * (180 / Math.PI)
@@ -77,15 +81,14 @@ export default function CustomCursor() {
 
     // ── Mouse move event ─────────────────────────────────────────────────────
     const handleMove = (event) => {
-      const previous = previousPositionRef.current
+      const previous = targetPositionRef.current
 
       // Velocity = current position - previous position
       velocityRef.current = {
         x: event.clientX - previous.x,
         y: event.clientY - previous.y
       }
-      previousPositionRef.current = { x: event.clientX, y: event.clientY }
-      positionRef.current = { x: event.clientX, y: event.clientY }
+      targetPositionRef.current = { x: event.clientX, y: event.clientY }
       setIsVisible(true)
 
       // Check karo kya mouse kisi interactive element pe hai
@@ -100,7 +103,7 @@ export default function CustomCursor() {
 
     // ── Click pe ripple effect ───────────────────────────────────────────────
     const handleDown = (event) => {
-      positionRef.current = { x: event.clientX, y: event.clientY }
+      targetPositionRef.current = { x: event.clientX, y: event.clientY }
       setRipplePosition({ x: event.clientX, y: event.clientY })
       setRippleId(id => id + 1)  // naya unique ID = naya ripple
     }

@@ -245,6 +245,178 @@ body {
               background 0.5s cubic-bezier(0.4,0,0.2,1);
 }
 
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.7s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+::view-transition-old(root) { animation-name: themeOld; }
+::view-transition-new(root) {
+  animation-name: themeNew;
+  mix-blend-mode: normal;
+}
+@keyframes themeOld {
+  to { opacity: 0.72; filter: saturate(0.82) brightness(1.08); }
+}
+@keyframes themeNew {
+  from { clip-path: circle(0% at var(--theme-x, 50%) var(--theme-y, 50%)); }
+  to { clip-path: circle(150% at var(--theme-x, 50%) var(--theme-y, 50%)); }
+}
+html.theme-transitioning body {
+  animation: themeFallback 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes themeFallback {
+  0% { filter: brightness(1.12) saturate(0.8); }
+  100% { filter: brightness(1) saturate(1); }
+}
+
+/* ─── Signal boot sequence ───────────────────────────────────────────────── */
+.intro-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  color: #fff;
+  background: #06050d;
+  isolation: isolate;
+  clip-path: inset(0);
+  transition: clip-path 1.2s cubic-bezier(0.76, 0, 0.24, 1);
+}
+.intro-screen--reveal {
+  clip-path: inset(0 0 100% 0);
+}
+.intro-noise,
+.intro-grid,
+.intro-aura {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.intro-noise {
+  opacity: 0.09;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+  mix-blend-mode: screen;
+}
+.intro-grid {
+  opacity: 0.34;
+  background-image: linear-gradient(rgba(161, 125, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(161, 125, 255, 0.08) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse at center, black, transparent 72%);
+}
+.intro-aura {
+  background: radial-gradient(circle at 50% 45%, rgba(124, 58, 237, 0.3), transparent 25%), radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.1), transparent 50%);
+  animation: introAura 4s ease-in-out infinite;
+}
+.intro-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 20px;
+  animation: introContentIn 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.intro-mark {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  display: grid;
+  place-items: center;
+}
+.intro-mark-core {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.32), rgba(37, 99, 235, 0.16));
+  box-shadow: 0 0 35px rgba(139, 92, 246, 0.6), inset 0 0 22px rgba(255,255,255,0.12);
+  font: 600 18px 'IBM Plex Mono', monospace;
+  letter-spacing: -0.08em;
+  padding-right: 3px;
+}
+.intro-mark-ring {
+  position: absolute;
+  border: 1px solid rgba(167, 139, 250, 0.34);
+  border-radius: 50%;
+}
+.intro-mark-ring--outer {
+  inset: 0;
+  border-right-color: rgba(255,255,255,0.8);
+  animation: introSpin 5s linear infinite;
+}
+.intro-mark-ring--inner {
+  inset: 13px;
+  border-left-color: rgba(96, 165, 250, 0.85);
+  animation: introSpin 3.2s linear infinite reverse;
+}
+.intro-wordmark {
+  font: 500 clamp(18px, 3vw, 28px) 'IBM Plex Mono', monospace;
+  letter-spacing: 0.32em;
+  padding-left: 0.32em;
+  text-shadow: 0 0 28px rgba(167, 139, 250, 0.55);
+}
+.intro-wordmark b { color: #a78bfa; font-weight: 500; }
+.intro-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: rgba(255,255,255,0.48);
+  font: 10px 'IBM Plex Mono', monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.intro-status-code { margin-left: 14px; color: rgba(167,139,250,0.8); }
+.intro-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a78bfa;
+  box-shadow: 0 0 12px #a78bfa;
+  animation: introPulse 1s ease-in-out infinite;
+}
+.intro-progress {
+  position: absolute;
+  z-index: 1;
+  right: 8vw;
+  bottom: 10vh;
+  left: 8vw;
+  height: 1px;
+  background: rgba(255,255,255,0.12);
+}
+.intro-progress span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, #a78bfa 40%, #60a5fa);
+  box-shadow: 0 0 14px #8b5cf6;
+  animation: introProgress 2.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.intro-corner {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: rgba(255,255,255,0.28);
+  font: 9px 'IBM Plex Mono', monospace;
+  letter-spacing: 0.16em;
+}
+.intro-corner span { color: rgba(167,139,250,0.65); }
+.intro-corner--tl { top: 7vh; left: 7vw; }
+.intro-corner--br { right: 7vw; bottom: 7vh; text-align: right; }
+@keyframes introContentIn { from { opacity: 0; transform: translateY(18px) scale(0.94); filter: blur(10px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes introAura { 50% { transform: scale(1.12); opacity: 0.72; } }
+@keyframes introSpin { to { transform: rotate(360deg); } }
+@keyframes introPulse { 50% { opacity: 0.35; transform: scale(0.65); } }
+@keyframes introProgress { to { width: 100%; } }
+
 /* ─── Cursor Experience ───────────────────────────────────────────────────── */
 .custom-cursor-layer {
   position: fixed;
@@ -265,13 +437,14 @@ body {
   will-change: transform;
 }
 .cursor-core {
-  width: 6px;
-  height: 6px;
-  margin: -3px 0 0 -3px;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
   border: 1px solid rgba(255,255,255,0.95);
   border-radius: 50%;
   background: #ffffff;
-  box-shadow: 0 0 5px #ffffff, 0 0 14px rgba(139,92,246,0.95), 0 0 26px rgba(99,102,241,0.65);
+  box-shadow: 0 0 5px #ffffff, 0 0 14px rgba(139,92,246,0.95), 0 0 26px rgba(99,102,241,0.65), 0 0 0 7px rgba(167,139,250,0.12);
+  transition: width 0.18s ease, height 0.18s ease, margin 0.18s ease, box-shadow 0.18s ease;
 }
 .cursor-trail {
   width: 180px;
@@ -285,9 +458,11 @@ body {
   transition: opacity 0.15s ease;
 }
 .is-interactive .cursor-core {
-  width: 8px;
-  height: 8px;
-  margin: -4px 0 0 -4px;
+  width: 13px;
+  height: 13px;
+  margin: -6.5px 0 0 -6.5px;
+  background: transparent;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.9), 0 0 18px rgba(167,139,250,0.95), 0 0 0 9px rgba(167,139,250,0.10);
 }
 .cursor-ripple {
   position: fixed;
@@ -605,6 +780,11 @@ html[data-theme="light"] .interactive-dot-field {
   background: var(--checkbox-bg); transition: all 0.2s ease;
   color: white; flex-shrink: 0;
 }
+.custom-checkbox--checked {
+  border-color: #8b5cf6;
+  background: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139,92,246,0.14), 0 0 16px rgba(139,92,246,0.26);
+}
 
 /* ══════════════════════════════════════════════════════════════════════════════
    STATS CARDS
@@ -754,57 +934,90 @@ html[data-theme="light"] .step-card:hover { box-shadow: 0 8px 32px rgba(139,92,2
   overflow: hidden;
   border-top: 1px solid var(--border);
 }
-.faq-item { border-bottom: 1px solid var(--border); }
-.faq-question-heading { margin: 0; }
-.faq-question {
+.faq-marquee {
+  position: relative;
+  overflow: hidden;
+  padding: 22px 0 28px;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.faq-marquee::before,
+.faq-marquee::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 12%;
+  content: "";
+  pointer-events: none;
+}
+.faq-marquee::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--page-bg), transparent);
+}
+.faq-marquee::after {
+  right: 0;
+  background: linear-gradient(270deg, var(--page-bg), transparent);
+}
+.faq-marquee-track {
   display: flex;
-  width: 100%;
+  width: max-content;
+  gap: 14px;
+  animation: faqMarquee 30s linear infinite;
+}
+.faq-marquee:hover .faq-marquee-track,
+.faq-marquee:focus-within .faq-marquee-track { animation-play-state: paused; }
+.faq-marquee-card {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 22px 0;
-  border: 0;
-  background: transparent;
+  gap: 14px;
+  min-width: 270px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
   color: var(--text-primary);
   font: inherit;
-  font-size: 0.9375rem;
-  text-align: left;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-.faq-question:hover { color: #a78bfa; }
-.faq-icon {
-  flex: 0 0 auto;
-  width: 17px;
-  height: 17px;
-  color: #a78bfa;
-  transition: transform 0.25s ease;
-}
-.faq-answer {
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  transition: grid-template-rows 0.35s ease, opacity 0.25s ease;
-}
-.faq-answer.is-open {
-  grid-template-rows: 1fr;
-  opacity: 1;
-}
-.faq-answer-inner { min-height: 0; overflow: hidden; }
-.faq-answer p {
-  max-width: 620px;
-  margin: -2px 42px 22px 0;
-  color: var(--text-secondary);
   font-size: 0.875rem;
-  line-height: 1.75;
+  text-align: left;
+  transition: border-color 0.25s ease, background 0.25s ease, color 0.25s ease;
+}
+.faq-marquee-number {
+  color: rgba(167,139,250,0.65);
+  font: 10px 'IBM Plex Mono', monospace;
+  letter-spacing: 0.08em;
+}
+.faq-marquee-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+}
+.faq-marquee-question {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.faq-marquee-answer {
+  max-width: 310px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+@keyframes faqMarquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-50% - 7px)); }
 }
 @media (max-width: 1023px) {
   .faq-layout { gap: 40px; }
 }
 @media (max-width: 640px) {
   .footer-brand-logo { width: 126px; height: 36px; }
-  .faq-question { padding: 18px 0; font-size: 0.875rem; }
-  .faq-answer p { margin-right: 28px; }
+  .faq-marquee { padding: 18px 0 22px; }
+  .faq-marquee-card { min-width: 235px; padding: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .faq-marquee-track { animation: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════

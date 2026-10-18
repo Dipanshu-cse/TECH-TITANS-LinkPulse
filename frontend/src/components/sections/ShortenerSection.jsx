@@ -79,15 +79,19 @@ export default function ShortenerSection({
           <div className="mt-6 flex flex-wrap items-center gap-5 pt-5 border-t border-white/[0.06]">
 
             {/* Checkbox — password protect karna hai kya */}
-            <label className="inline-flex cursor-pointer items-center gap-3 text-sm text-white/50">
+            <label htmlFor="password-protected" className="inline-flex cursor-pointer items-center gap-3 text-sm text-white/50">
               <input
+                id="password-protected"
                 type="checkbox"
                 checked={passwordProtected}
                 onChange={e => setPasswordProtected(e.target.checked)}
-                className="peer sr-only"  // visually hidden, custom checkbox use karo
+                className="sr-only"
               />
-              <span className="custom-checkbox peer-checked:border-violet-500 peer-checked:bg-violet-500">
-                <Check className="size-3 opacity-0 peer-checked:opacity-100" />
+              <span
+                className={`custom-checkbox ${passwordProtected ? "custom-checkbox--checked" : ""}`}
+                aria-hidden="true"
+              >
+                {passwordProtected && <Check className="size-3" />}
               </span>
               <LockKeyhole className="size-4 text-white/30" />
               Password protect this link

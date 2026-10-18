@@ -14,8 +14,7 @@
 //  ├── App.jsx                     ← YE FILE — sab kuch jodata hai
 //  ├── main.jsx                    — React app ko DOM mein mount karta hai
 //  ├── index.css                   — saari CSS (themes, components, animations)
-//  ├── App.css                     — (ignore karo, purani Vite boilerplate hai)
-//  ├── supabase.js                 — Supabase database connection
+// ├── supabase.js                 — Supabase database connection
 //  ├── hooks/
 //  │   ├── useTheme.js             — dark/light theme logic
 //  │   └── useLinkManager.js       — saari database aur link form logic
@@ -81,10 +80,6 @@ export default function LinkPulsePage() {
     const timer = setTimeout(() => setVideoReady(true), HERO_REVEAL_MS)
     return () => clearTimeout(timer)
   }, [])
-
-  // ── FAQ State ─────────────────────────────────────────────────────────────
-  // openFaq = kaunsa FAQ accordion item open hai (index number ya null)
-  const [openFaq, setOpenFaq] = useState(null)
 
   // ── Scroll Refs ───────────────────────────────────────────────────────────
   // Shortener section pe smooth scroll karne ke liye
@@ -161,8 +156,8 @@ export default function LinkPulsePage() {
       {/* 4. How It Works Section — 3 steps with connector line */}
       <HowItWorksSection />
 
-      {/* 5. FAQ Section — accordion style questions & answers */}
-      <FAQSection openFaq={openFaq} setOpenFaq={setOpenFaq} />
+      {/* 5. FAQ Section — continuously moving questions and answers */}
+      <FAQSection />
 
       {/* 6. CTA Banner — "Get Started Free" promotional banner */}
       <CTABanner onGetStarted={scrollToShortener} />
