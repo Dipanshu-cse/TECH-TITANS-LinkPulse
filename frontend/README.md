@@ -13,6 +13,10 @@ npm install
 npm run dev
 ```
 
+For local Supabase access, copy `frontend/.env.example` to
+`frontend/.env.local` and fill in the Supabase project URL and anon/public key.
+Never put a service-role key in frontend variables or commit `.env.local`.
+
 The production checks are:
 
 ```bash
@@ -35,6 +39,16 @@ npm run build
 The root `vercel.json` provides the SPA fallback required for short-link
 routes such as `/your-alias`. After deployment, create links from the Vercel
 URL, not from `localhost`, so shared links are publicly reachable.
+
+Before deploying, add these Vercel Environment Variables for the frontend:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+Select them for Production, Preview, and Development, then redeploy after
+saving them. Vite embeds `VITE_` variables into the browser bundle, so only
+the Supabase anon/public key belongs there. The service-role key must remain
+server-side and must never be committed or added to Vercel frontend variables.
 
 ## Supabase setup
 
