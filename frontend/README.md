@@ -20,14 +20,12 @@ npm run build
 
 ## Supabase setup
 
-1. Create the `links` and `clicks` tables expected by
-   [`useLinkManager.js`](./src/hooks/useLinkManager.js).
-2. Run [`supabase_migration.sql`](../supabase_migration.sql) in the Supabase SQL
-   editor.
-3. Configure Row Level Security policies for the anonymous client before
-   deploying. Redirect lookups need public read access to the minimum link
-   fields, while link-management queries must be restricted to the owner
-   identity used by the application.
+1. Run [`supabase_migration.sql`](../supabase_migration.sql) in the Supabase SQL
+   editor. It creates missing `links` and `clicks` tables, adds the required
+   columns and indexes, enables RLS, and installs the policies used by the
+   anonymous client.
+2. If the tables already exist, the migration is safe to run again: columns,
+   indexes, and policies are installed idempotently.
 
 Passwords created by the current client are stored as SHA-256 hashes in
 `password_hash`; never store or migrate plaintext passwords into that column.
@@ -38,4 +36,6 @@ enabling password-protected links.
 
 The current anonymous-browser workspace is tied to a browser-local visitor ID.
 It is not an authenticated account, so links are not automatically available
-on another device or browser.
+on another device or browser. The migration's permissive policies are intended
+for this demo/no-account model; add Supabase Auth or a server-side API before
+using it for private production data.
