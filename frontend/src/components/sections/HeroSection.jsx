@@ -1,7 +1,8 @@
 // ─── HeroSection.jsx ─────────────────────────────────────────────────────────
 // Ye page ka sabse pehla (aur sabse bada) section hai.
 // Isme ye sab hai:
-//   - Background video (blur ke saath)
+//   - Background video (theme ke hisaab se toned)
+//   - LinkPulse URL signal card
 //   - Floating URL pills (decorative)
 //   - Main headline "Links That Think For You."
 //   - CTA buttons (Shorten a Link, View Links, See Features)
@@ -17,9 +18,11 @@
 //   onViewLinks    — links table pe scroll karne ke liye function
 //   onScrollFeatures — features section pe scroll karne ke liye function
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Activity, ArrowDown, ArrowUpRight, CheckCircle2, ChevronRight, Filter, Sparkles } from "lucide-react"
 import FloatingPill from "../ui-custom/FloatingPill"
+
+const TYPED_PHRASES = ["secure links.", "clean analytics.", "better campaigns."]
 
 export default function HeroSection({
   heroReady,
@@ -29,11 +32,15 @@ export default function HeroSection({
   onViewLinks,
   onScrollFeatures,
 }) {
+  const [typedText, setTypedText] = useState("")
+  const [phraseIndex, setPhraseIndex] = useState(0)
+  const [isDeleting, setIsDeleting] = useState(false)
   // heroRef = poora hero section element (parallax calculation ke liye)
   // heroGlassRef = glass layer jo mouse se tilt hoti hai
   // heroParallaxFrame = animation frame ID (cleanup ke liye)
   const heroRef = useRef(null)
   const heroGlassRef = useRef(null)
+  const heroSignalRef = useRef(null)
   const heroParallaxFrame = useRef(null)
 
   // ── Mouse parallax effect — hero glass layer mouse pe react kare ───────────
@@ -55,6 +62,8 @@ export default function HeroSection({
     cancelAnimationFrame(heroParallaxFrame.current)
     heroParallaxFrame.current = requestAnimationFrame(() => {
       // CSS custom properties set karo — ye CSS mein use hoti hain
+      heroSignalRef.current?.style.setProperty("--parallax-x", `${x}px`)
+      heroSignalRef.current?.style.setProperty("--parallax-y", `${y}px`)
       heroGlassRef.current?.style.setProperty("--parallax-x", `${x}px`)
       heroGlassRef.current?.style.setProperty("--parallax-y", `${y}px`)
     })
@@ -64,6 +73,8 @@ export default function HeroSection({
   const resetHeroParallax = () => {
     cancelAnimationFrame(heroParallaxFrame.current)
     heroParallaxFrame.current = requestAnimationFrame(() => {
+      heroSignalRef.current?.style.setProperty("--parallax-x", "0px")
+      heroSignalRef.current?.style.setProperty("--parallax-y", "0px")
       heroGlassRef.current?.style.setProperty("--parallax-x", "0px")
       heroGlassRef.current?.style.setProperty("--parallax-y", "0px")
     })
@@ -72,6 +83,23 @@ export default function HeroSection({
   // Cleanup — unmount pe pending animation frame cancel karo
   useEffect(() => () => cancelAnimationFrame(heroParallaxFrame.current), [])
 
+  useEffect(() => {
+    const phrase = TYPED_PHRASES[phraseIndex]
+    const completed = typedText === phrase
+    const empty = typedText.length === 0
+    const delay = completed ? 1500 : empty && isDeleting ? 350 : isDeleting ? 42 : 78
+    const timer = window.setTimeout(() => {
+      if (completed) setIsDeleting(true)
+      else if (isDeleting && empty) {
+        setIsDeleting(false)
+        setPhraseIndex(index => (index + 1) % TYPED_PHRASES.length)
+      } else {
+        setTypedText(value => isDeleting ? value.slice(0, -1) : phrase.slice(0, value.length + 1))
+      }
+    }, delay)
+    return () => window.clearTimeout(timer)
+  }, [isDeleting, phraseIndex, typedText])
+
   return (
     <section
       ref={heroRef}
@@ -79,8 +107,13 @@ export default function HeroSection({
       onPointerLeave={resetHeroParallax}
       onPointerMove={handleHeroPointerMove}
     >
-      {/* ── Background video layer — mouse se thoda move hoti hai ─────────── */}
-      <div ref={heroGlassRef} className="hero-glass-layer absolute inset-[-5%] z-0">
+      {/* Background video layer — mouse se thoda move hoti hai */}
+      <div
+        ref={heroGlassRef}
+        className="hero-glass-layer absolute inset-[-5%] z-0"
+        aria-hidden="true"
+        style={{ transform: "translate3d(var(--parallax-x, 0px), var(--parallax-y, 0px), 0)" }}
+      >
         <video
           autoPlay
           loop
@@ -89,9 +122,7 @@ export default function HeroSection({
           className="hero-glass-video absolute inset-0 h-full w-full object-cover"
           src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/agentic-hero-9yW3wnTNMfn2U6lsVhTTZSJFEvAoSj.mp4"
           style={{
-            // videoReady hone pe zoom in hota hai (scale 0.85 → 1.05)
             transform: videoReady ? "scale(1.05)" : "scale(0.85)",
-            // Theme ke hisaab se brightness aur saturation change hoti hai
             filter: theme === "dark"
               ? "brightness(0.52) saturate(1.25) contrast(1.08)"
               : "brightness(1.08) saturate(0.68) contrast(0.92)",
@@ -113,17 +144,23 @@ export default function HeroSection({
       <FloatingPill text="go.lp/waitlist"      delay={0.8} x={82} y={76} className="floating-pill-hide-tablet" />
 
       <div
+        ref={heroSignalRef}
         className="hero-signal-preview"
         style={{
           opacity: heroReady ? 1 : 0,
-          transform: heroReady ? "translateY(0) rotate(1deg)" : "translateY(18px) rotate(1deg)",
+          transform: heroReady
+            ? "translate3d(var(--parallax-x, 0px), var(--parallax-y, 0px), 0) rotate(1deg)"
+            : "translate3d(var(--parallax-x, 0px), calc(18px + var(--parallax-y, 0px)), 0) rotate(1deg)",
         }}
       >
         <div className="hero-signal-header">
-          <span className="hero-signal-live"><span /> LIVE SIGNAL</span>
+          <span className="hero-signal-live"><span /> YOUR LINKPULSE URL</span>
           <Activity className="size-4" />
         </div>
-        <div className="hero-signal-url">go.lp/launch</div>
+        <div className="hero-signal-url">linkpulse.to/launch</div>
+        <div className="hero-signal-qr" aria-hidden="true">
+          {Array.from({ length: 25 }, (_, index) => <span key={index} className={(index % 5 === 0 || index === 6 || index === 18 || index === 22) ? "is-dark" : ""} />)}
+        </div>
         <div className="hero-signal-rule" />
         <div className="hero-signal-metrics">
           <div><strong>1,284</strong><span>verified visits</span></div>
@@ -165,6 +202,9 @@ export default function HeroSection({
             Links That<br />
             <span className="gradient-text">Think For You.</span>
           </h1>
+          <div className="hero-typed-line" aria-live="polite">
+            Build <span>{typedText}</span><i aria-hidden="true" />
+          </div>
 
           {/* Subtitle / description */}
           <p

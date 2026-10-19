@@ -136,7 +136,7 @@ export default function CreatedModal({ modalData, copied, onCopy, onClose, onVie
               <button
                 type="button"
                 onClick={() => onCopy(modalData.workingUrl)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-4 py-2 text-xs text-white transition hover:opacity-90 shadow-lg shadow-violet-500/20"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2 text-xs text-white transition hover:opacity-90 shadow-lg shadow-emerald-500/20"
               >
                 {/* Copy hua to green check + "Copied!", warna copy icon */}
                 {copied === modalData.workingUrl

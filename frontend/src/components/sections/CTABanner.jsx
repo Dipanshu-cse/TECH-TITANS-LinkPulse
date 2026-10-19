@@ -6,14 +6,14 @@
 // Props:
 //   onGetStarted — button click karne pe shortener section pe scroll kare
 
-import { ArrowUpRight, Star } from "lucide-react"
+import { ArrowUpRight, Check, Mail } from "lucide-react"
 
 export default function CTABanner({ onGetStarted }) {
   return (
     <section className="relative z-10 px-6 py-16 md:px-12 lg:px-20">
       <div className="mx-auto max-w-4xl">
 
-        {/* Main banner card — violet glow ke saath */}
+        {/* Main closing banner */}
         <div className="cta-banner">
           {/* Glow effect — banner ke andar ek radial gradient hai */}
           <div className="cta-banner-glow" />
@@ -21,26 +21,30 @@ export default function CTABanner({ onGetStarted }) {
           {/* Content — centered text + button */}
           <div className="relative z-10 flex flex-col items-center gap-6 text-center">
 
-            {/* "Free for personal use" badge */}
-            <div className="flex items-center gap-2 rounded-full px-4 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-              <Star className="size-3.5 fill-amber-400 text-amber-400" />
-              <span className="text-xs" style={{ color: "var(--text-secondary)" }}>Free for personal use. No signup required.</span>
-            </div>
-
             {/* Main heading */}
             <h2 className="text-4xl font-light tracking-tight md:text-5xl" style={{ color: "var(--text-primary)" }}>
-              Ready to pulse your <span className="gradient-text">links?</span>
+              Ready to get started<span className="gradient-text">?</span>
             </h2>
 
             {/* Subtitle */}
             <p className="max-w-lg text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
-              Create, protect, and track your links without creating an account.
+              Create, protect, and track your links in seconds. No account or credit card needed.
             </p>
 
-            {/* CTA Button — shortener section pe le jaata hai */}
-            <button onClick={onGetStarted} className="cta-primary text-base px-8 py-4">
-              Get Started Free <ArrowUpRight className="size-5" />
-            </button>
+            <div className="flex flex-wrap justify-center gap-3">
+              <button onClick={onGetStarted} className="cta-primary text-base px-8 py-4">
+                Get Started Free <ArrowUpRight className="size-5" />
+              </button>
+              <a href="mailto:rahulmelkani4280@gmail.com" className="cta-ghost text-base px-7 py-4">
+                Contact Us <Mail className="size-4" />
+              </a>
+            </div>
+
+            <div className="cta-reassurance">
+              {["No credit card required", "No login required", "Links saved on your device"].map(item => (
+                <span key={item}><Check className="size-4" /> {item}</span>
+              ))}
+            </div>
 
           </div>
         </div>

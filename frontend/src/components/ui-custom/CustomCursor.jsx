@@ -14,6 +14,7 @@ export default function CustomCursor() {
   // cursorRef = glowing dot element
   // trailRef  = trail (puch) element
   const cursorRef = useRef(null)
+  const haloRef = useRef(null)
   const trailRef = useRef(null)
 
   // positionRef = current mouse position (ref isliye ki re-render na ho)
@@ -67,6 +68,9 @@ export default function CustomCursor() {
       // Cursor dot ko position pe lao (GPU-accelerated translate3d use karo)
       if (cursorRef.current) {
         cursorRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`
+      }
+      if (haloRef.current) {
+        haloRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`
       }
 
       // Trail ko position + angle + length ke saath update karo
@@ -134,7 +138,7 @@ export default function CustomCursor() {
       {/* Cursor ki puch (trail) */}
       <span ref={trailRef} className="cursor-trail" />
 
-      {/* Cursor ka main glowing dot */}
+      <span ref={haloRef} className="cursor-halo" />
       <span ref={cursorRef} className="cursor-core" />
 
       {/* Click pe ripple — key={rippleId} se har click pe naya element banta hai */}

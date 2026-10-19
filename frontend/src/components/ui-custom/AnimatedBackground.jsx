@@ -25,7 +25,7 @@ export default function AnimatedBackground() {
 
     let width = 0
     let height = 0
-    let dots = []            // har dot ki position aur phase store hoti hai yahan
+    let nodes = []
     let animationFrame      // requestAnimationFrame ka ID (cleanup ke liye)
 
     // ── Canvas ko resize karna jab window size change ho ──────────────────────
@@ -40,15 +40,12 @@ export default function AnimatedBackground() {
       canvas.style.height = `${height}px`
       context.setTransform(ratio, 0, 0, ratio, 0, 0)
 
-      // Naye size ke liye dots phir se banao
-      dots = []
-      const spacing = width < 700 ? 34 : 28   // mobile pe thoda bada gap
-      for (let y = spacing / 2; y < height + spacing; y += spacing) {
-        for (let x = spacing / 2; x < width + spacing; x += spacing) {
-          // phase = random value taaki har dot alag speed se animate ho
-          dots.push({ x, y, phase: Math.random() * Math.PI * 2 })
-        }
-      }
+      nodes = Array.from({ length: width < 700 ? 42 : 78 }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        phase: Math.random() * Math.PI * 2,
+        radius: 0.6 + Math.random() * 1.2,
+      }))
     }
 
     // ── Main draw loop — har frame mein ye chalti hai ──────────────────────────
@@ -60,66 +57,51 @@ export default function AnimatedBackground() {
       context.clearRect(0, 0, width, height)
 
       const motionTime = reduceMotion ? 0 : time * 0.0007
-      const influenceRadius = 190   // mouse ke kitne area mein dots affect honge
+      const influenceRadius = 260
 
-      // activeDots = woh dots jo mouse ke kaafi kareeb hain (lines draw karne ke liye)
-      const activeDots = []
+      nodes.forEach((node) => {
+        const driftX = Math.sin(motionTime * 0.9 + node.phase) * 10
+        const driftY = Math.cos(motionTime * 0.7 + node.phase) * 10
+        let x = node.x + driftX
+        let y = node.y + driftY
 
-      dots.forEach((dot) => {
-        // Har dot thoda sa idhar-udhar "breathe" karta hai (sine wave se)
-        const driftX = Math.sin(motionTime + dot.phase) * 2
-        const driftY = Math.cos(motionTime * 0.8 + dot.phase) * 2
-        const x = dot.x + driftX
-        const y = dot.y + driftY
-
-        // Mouse se distance calculate karo
         const distance = Math.hypot(pointer.x - x, pointer.y - y)
-
-        // influence = mouse ke paas hone par 0 se 1 tak ka value
         const influence = pointer.active ? Math.max(0, 1 - distance / influenceRadius) : 0
-        const wave = Math.sin(motionTime * 2 + dot.phase) * 0.12
+        if (influence > 0) {
+          const push = influence * 14
+          x += (x - pointer.x) / Math.max(distance, 1) * push
+          y += (y - pointer.y) / Math.max(distance, 1) * push
+        }
 
-        // Mouse ke paas wale dots bade aur zyada bright dikhte hain
-        const radius = 1.1 + influence * 2.8
-        const alpha = (dark ? 0.12 : 0.09) + influence * 0.7 + wave
-
-        // Dot draw karo
         context.beginPath()
-        context.arc(x, y, radius, 0, Math.PI * 2)
+        context.arc(x, y, node.radius + influence * 1.8, 0, Math.PI * 2)
         context.fillStyle = dark
-          ? `rgba(112, 211, 255, ${Math.max(0.04, alpha)})`
-          : `rgba(109, 40, 217, ${Math.max(0.035, alpha * 0.72)})`
+          ? `rgba(125, 211, 252, ${0.22 + influence * 0.65})`
+          : `rgba(109, 40, 217, ${0.12 + influence * 0.45})`
         context.fill()
-
-        // Agar dot kaafi mouse ke paas hai to active list mein daal do
-        if (influence > 0.55) activeDots.push({ x, y, influence })
       })
 
-      // ── Active dots ke beech lines draw karo ──────────────────────────────
-      context.lineWidth = 0.6
-      activeDots.forEach((dot, index) => {
-        activeDots.slice(index + 1).forEach((next) => {
-          const distance = Math.hypot(dot.x - next.x, dot.y - next.y)
-          if (distance < 58) {  // sirf kareeb wale dots ke beech line
-            context.beginPath()
-            context.moveTo(dot.x, dot.y)
-            context.lineTo(next.x, next.y)
-            context.strokeStyle = dark
-              ? `rgba(99, 202, 255, ${0.16 * dot.influence})`
-              : `rgba(124, 58, 237, ${0.10 * dot.influence})`
-            context.stroke()
-          }
-        })
-      })
-
-      // ── Mouse ke aas-paas glow effect ─────────────────────────────────────
+      // A soft radar sweep replaces the old hover constellation.
       if (pointer.active) {
-        const glow = context.createRadialGradient(pointer.x, pointer.y, 0, pointer.x, pointer.y, 210)
-        glow.addColorStop(0, dark ? "rgba(63, 190, 255, 0.12)" : "rgba(139, 92, 246, 0.09)")
-        glow.addColorStop(0.45, dark ? "rgba(63, 190, 255, 0.035)" : "rgba(139, 92, 246, 0.025)")
+        const pulse = reduceMotion ? 0 : (Math.sin(time * 0.003) + 1) * 0.5
+        const radius = 72 + pulse * 34
+        const glow = context.createRadialGradient(pointer.x, pointer.y, 0, pointer.x, pointer.y, influenceRadius)
+        glow.addColorStop(0, dark ? "rgba(86, 216, 255, 0.08)" : "rgba(139, 92, 246, 0.06)")
+        glow.addColorStop(0.45, dark ? "rgba(86, 216, 255, 0.025)" : "rgba(139, 92, 246, 0.018)")
         glow.addColorStop(1, "rgba(0, 0, 0, 0)")
         context.fillStyle = glow
-        context.fillRect(pointer.x - 210, pointer.y - 210, 420, 420)
+        context.fillRect(pointer.x - influenceRadius, pointer.y - influenceRadius, influenceRadius * 2, influenceRadius * 2)
+
+        context.beginPath()
+        context.arc(pointer.x, pointer.y, radius, 0, Math.PI * 2)
+        context.strokeStyle = dark ? `rgba(86, 216, 255, ${0.16 + pulse * 0.10})` : "rgba(124, 58, 237, 0.12)"
+        context.lineWidth = 1
+        context.stroke()
+
+        context.beginPath()
+        context.arc(pointer.x, pointer.y, radius + 16, -0.8, 0.75)
+        context.strokeStyle = dark ? "rgba(155, 140, 255, 0.22)" : "rgba(124, 58, 237, 0.14)"
+        context.stroke()
       }
 
       // Agar reduce motion nahi hai to next frame request karo
@@ -162,8 +144,8 @@ export default function AnimatedBackground() {
       {/* Subtle grid lines overlay */}
       <div className="grid-overlay" />
 
-      {/* Interactive dot field — mouse se react karta hai */}
-      <canvas ref={canvasRef} className="interactive-dot-field" />
+      {/* Ambient signal field — pointer par radar sweep aur arcs dikhata hai */}
+      <canvas ref={canvasRef} className="interactive-signal-field" />
     </div>
   )
 }

@@ -26,16 +26,14 @@ export function MobileNav({ onGetStarted, onOpenAnalytics, theme, onToggleTheme 
   const close = () => setOpen(false)
 
   return (
-    <div className="fixed top-4 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
-      <div className="pointer-events-auto w-full max-w-3xl">
+    <div className="fixed top-0 inset-x-0 z-50 pointer-events-none">
+      <div className="pointer-events-auto w-full">
         <nav
-          className="flex items-center justify-between px-5 py-3 rounded-2xl"
+          className="flex items-center justify-between px-5 py-3"
           style={{
-            border: "1px solid var(--nav-border)",
+            borderBottom: "1px solid var(--nav-border)",
             background: "var(--nav-bg)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            boxShadow: "0 8px 32px var(--nav-shadow), 0 1px 0 var(--border) inset",
+            boxShadow: "0 8px 28px var(--nav-shadow)",
           }}
         >
           <div className="flex items-center gap-2.5">
@@ -48,7 +46,7 @@ export function MobileNav({ onGetStarted, onOpenAnalytics, theme, onToggleTheme 
 
           <div className="hidden md:flex items-center gap-7">
             {NAV_LINKS.map(link => (
-              <a key={link.label} href={link.href} onClick={link.label === "Click Analytics" ? (event) => { event.preventDefault(); onOpenAnalytics() } : undefined} className="text-xs tracking-wide no-underline transition-colors"
+              <a key={link.label} href={link.href} onClick={link.label === "Click Analytics" ? (event) => { event.preventDefault(); onOpenAnalytics() } : undefined} className="nav-link text-xs tracking-wide no-underline transition-colors"
                 style={{ color: "var(--text-muted)" }}>
                 {link.label}
               </a>
@@ -66,12 +64,12 @@ export function MobileNav({ onGetStarted, onOpenAnalytics, theme, onToggleTheme 
             </button>
             <button
               onClick={onGetStarted}
-              className="hidden md:inline-flex items-center gap-2"
+              className="nav-cta hidden md:inline-flex items-center gap-2"
               style={{
                 fontSize: 12, padding: "7px 16px", borderRadius: 100,
-                background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)",
+                background: "linear-gradient(135deg, #10b981 0%, #0f766e 100%)",
                 border: "none", color: "white", fontWeight: 500,
-                boxShadow: "0 4px 16px rgba(124,58,237,0.35)",
+                boxShadow: "0 4px 16px rgba(16,185,129,0.28)",
               }}
             >
               Get Started <ArrowUpRight className="size-3" />
@@ -81,6 +79,7 @@ export function MobileNav({ onGetStarted, onOpenAnalytics, theme, onToggleTheme 
               className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg"
               style={{ border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text-secondary)" }}
               aria-label={open ? "Close menu" : "Open menu"}
+              aria-expanded={open}
             >
               {open ? <X className="size-3.5" /> : <Menu className="size-3.5" />}
             </button>
@@ -88,11 +87,11 @@ export function MobileNav({ onGetStarted, onOpenAnalytics, theme, onToggleTheme 
         </nav>
 
         <div className="md:hidden mt-2 overflow-hidden transition-all duration-300" style={{ maxHeight: open ? 360 : 0, opacity: open ? 1 : 0 }}>
-          <div className="rounded-2xl px-2 py-2 flex flex-col gap-0.5"
-            style={{ border: "1px solid var(--nav-border)", background: isDark ? "rgba(5,5,7,0.95)" : "rgba(250,248,255,0.97)", backdropFilter: "blur(20px)" }}>
+          <div className="px-2 py-2 flex flex-col gap-0.5"
+            style={{ borderBottom: "1px solid var(--nav-border)", borderLeft: "1px solid var(--nav-border)", borderRight: "1px solid var(--nav-border)", background: "var(--nav-bg)" }}>
             {NAV_LINKS.map(link => (
               <a key={link.label} href={link.href} onClick={link.label === "Click Analytics" ? (event) => { event.preventDefault(); onOpenAnalytics(); close() } : close}
-                className="px-4 py-3 text-sm rounded-xl no-underline"
+                className="nav-mobile-link px-4 py-3 text-sm rounded-xl no-underline"
                 style={{ color: "var(--text-secondary)" }}>
                 {link.label}
               </a>
@@ -103,8 +102,8 @@ export function MobileNav({ onGetStarted, onOpenAnalytics, theme, onToggleTheme 
                 {isDark ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
               </button>
             </div>
-            <button onClick={() => { onGetStarted(); close() }} className="mx-2 mb-1 rounded-[14px] py-3 text-[13px] font-medium text-white"
-              style={{ background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)", border: "none" }}>
+            <button onClick={() => { onGetStarted(); close() }} className="nav-cta mx-2 mb-1 rounded-[14px] py-3 text-[13px] font-medium text-white"
+              style={{ background: "linear-gradient(135deg, #10b981 0%, #0f766e 100%)", border: "none" }}>
               Get Started Free →
             </button>
           </div>

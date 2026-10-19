@@ -31,7 +31,7 @@ export default function RedirectLoader({ passwordState = null, error = "" }) {
             style={{ background: "var(--modal-bg)", border: "1px solid rgba(239,68,68,0.3)" }}
           >
             <p className="text-sm" style={{ color: "var(--text-primary)" }}>{error}</p>
-            <a href="/" className="mt-5 inline-flex rounded-xl px-4 py-2 text-xs text-white" style={{ background: "linear-gradient(135deg, #7c3aed, #4f46e5)" }}>
+            <a href="/" className="mt-5 inline-flex rounded-xl px-4 py-2 text-xs text-white" style={{ background: "linear-gradient(135deg, #34D399, #087F68)" }}>
               Return home
             </a>
           </div>
@@ -128,7 +128,7 @@ function PasswordGate({ onSubmit, error }) {
           disabled={!value.trim()}
           className="flex items-center justify-center gap-2 h-12 rounded-2xl text-sm font-medium text-white transition"
           style={{
-            background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)",
+            background: "linear-gradient(135deg, #34D399 0%, #087F68 100%)",
             opacity: value.trim() ? 1 : 0.5,
             cursor: value.trim() ? "pointer" : "not-allowed",
             boxShadow: "0 8px 32px rgba(124,58,237,0.35)",

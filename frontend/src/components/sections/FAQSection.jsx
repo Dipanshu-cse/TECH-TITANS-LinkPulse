@@ -1,6 +1,8 @@
 // ─── FAQSection.jsx ──────────────────────────────────────────────────────────
+import { useState } from "react"
+import { ChevronDown } from "lucide-react"
+
 // Ye section "Frequently Asked Questions" dikhata hai.
-// Questions and answers move together in a continuously looping rail.
 // FAQS array mein saare questions aur answers hain.
 //
 // ── FAQ Data Array ────────────────────────────────────────────────────────────
@@ -29,13 +31,15 @@ const FAQS = [
 ]
 
 export default function FAQSection() {
+  const [openQuestion, setOpenQuestion] = useState(0)
+
   return (
     <section
       id="faq"
       aria-labelledby="faq-title"
       className="faq-section relative z-10 px-6 py-24 md:px-12 lg:px-20"
     >
-      {/* Two-column layout: left = title, right = moving answers */}
+      {/* Two-column layout: left = title, right = calm accordion */}
       <div className="faq-layout mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
 
         {/* ── Left Column — Title + Intro ────────────────────────────────── */}
@@ -47,29 +51,29 @@ export default function FAQSection() {
           <p className="faq-intro">Quick answers about creating, protecting, and tracking your links.</p>
         </div>
 
-        {/* ── Right Column — Moving question and answer rail ───────────── */}
+        {/* ── Right Column — FAQ accordion ───────────────────────────────── */}
         <div className="faq-list">
-          <div className="faq-marquee" aria-label="Frequently asked questions">
-            <div className="faq-marquee-track">
-              {[...FAQS, ...FAQS].map((faq, index) => {
-                const originalIndex = index % FAQS.length
-                const isDuplicate = index >= FAQS.length
-
-                return (
-                  <div
-                    key={`${isDuplicate ? "duplicate-" : ""}${faq.question}`}
-                    aria-hidden={isDuplicate}
-                    className="faq-marquee-card"
+          <div className="faq-accordion" aria-label="Frequently asked questions">
+            {FAQS.map((faq, index) => {
+              const isOpen = openQuestion === index
+              return (
+                <div key={faq.question} className={`faq-item ${isOpen ? "is-open" : ""}`}>
+                  <button
+                    type="button"
+                    className="faq-trigger"
+                    aria-expanded={isOpen}
+                    onClick={() => setOpenQuestion(isOpen ? -1 : index)}
                   >
-                    <span className="faq-marquee-number">0{originalIndex + 1}</span>
-                    <div className="faq-marquee-copy">
-                      <span className="faq-marquee-question">{faq.question}</span>
-                      <span className="faq-marquee-answer">{faq.answer}</span>
-                    </div>
+                    <span className="faq-marquee-number">0{index + 1}</span>
+                    <span className="faq-marquee-question">{faq.question}</span>
+                    <ChevronDown className="faq-chevron" aria-hidden="true" />
+                  </button>
+                  <div className="faq-answer-wrap" hidden={!isOpen}>
+                    <p className="faq-marquee-answer">{faq.answer}</p>
                   </div>
-                )
-              })}
-            </div>
+                </div>
+              )
+            })}
           </div>
         </div>
 

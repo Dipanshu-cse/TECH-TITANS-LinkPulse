@@ -73,8 +73,7 @@ export default function LinkPulsePage() {
   const [heroReady, setHeroReady] = useState(false)
   const handleIntroDone = useCallback(() => setHeroReady(true), [])
 
-  // videoReady = kya hero background video zoom-in shuru kare?
-  // HERO_REVEAL_MS ke baad video scale up hoti hai
+  // Background video intro ke reveal ke saath zoom-in hota hai.
   const [videoReady, setVideoReady] = useState(false)
   useEffect(() => {
     const timer = setTimeout(() => setVideoReady(true), HERO_REVEAL_MS)
@@ -121,7 +120,7 @@ export default function LinkPulsePage() {
           PAGE SECTIONS — upar se neeche
          ══════════════════════════════════════════════════════════════════════ */}
 
-      {/* 1. Hero Section — fullscreen video background + headline + CTAs */}
+      {/* 1. Hero Section — LinkPulse URL preview + headline + CTAs */}
       <HeroSection
         heroReady={heroReady}
         videoReady={videoReady}

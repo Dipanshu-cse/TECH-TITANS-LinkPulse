@@ -258,7 +258,7 @@ function ShortenerForm({ longUrl, setLongUrl, alias, setAlias, aliasError, setAl
   return (
     <form
       onSubmit={onSubmit}
-      className="grid gap-6 lg:grid-cols-[1fr_0.8fr_auto] lg:items-end"
+      className="shortener-form grid gap-6 lg:grid-cols-[1fr_0.8fr_auto] lg:items-start"
     >
       {/* Long URL */}
       <label className="flex flex-col gap-2 text-xs uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
@@ -477,7 +477,7 @@ function AnalyticsPopover({ linkId, shortCode, anchorEl, onClose }) {
                     width: "100%",
                     height: `${Math.round((count / maxDay) * 100)}%`,
                     minHeight: count > 0 ? 3 : 0,
-                    background: "linear-gradient(to top, #7c3aed, #3b82f6)",
+                    background: "linear-gradient(to top, #087f68, #34d399)",
                     borderRadius: 4,
                     transition: "height 0.5s ease",
                   }} />
@@ -559,7 +559,7 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete 
               onClick={() => setStatusFilter(value)}
               className="rounded-full border px-3 py-1.5 text-[10px] uppercase tracking-wider transition"
               style={statusFilter === value
-                ? { borderColor: "rgba(139,92,246,0.40)", background: "rgba(139,92,246,0.10)", color: "#a78bfa" }
+                ? { borderColor: "rgba(16,185,129,0.40)", background: "rgba(16,185,129,0.10)", color: "#087f68" }
                 : { borderColor: "var(--border)", color: "var(--text-muted)" }}
             >
               {label}
@@ -720,7 +720,7 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete 
                             setOpenPopover(isOpen ? null : { id: link.id, anchorEl: e.currentTarget })
                           }}
                           className="inline-flex items-center p-1.5 rounded-lg transition-colors"
-                          style={{ color: openPopover?.id === link.id ? "#8b5cf6" : "var(--text-faint)" }}
+                          style={{ color: openPopover?.id === link.id ? "#087f68" : "var(--text-faint)" }} 
                           title="View analytics"
                         >
                           <BarChart2 className="size-3.5" />

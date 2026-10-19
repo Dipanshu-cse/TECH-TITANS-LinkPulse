@@ -31,8 +31,8 @@ const FEATURES = [
     icon: BarChart3,
     title: "Traffic Quality Analytics",
     desc: "See verified visits, device mix, ghost clicks, and bot or preview traffic in a live dashboard with seven-day activity.",
-    color: "from-blue-500/20 to-indigo-500/10",
-    accent: "#6366f1",
+    color: "from-emerald-500/20 to-teal-500/10",
+    accent: "#0f9f72",
   },
   {
     icon: Ghost,
@@ -45,8 +45,8 @@ const FEATURES = [
     icon: LockKeyhole,
     title: "Password Protection",
     desc: "Lock any link behind a secret passphrase. Share with confidence knowing only intended recipients can access.",
-    color: "from-violet-500/20 to-purple-500/10",
-    accent: "#8b5cf6",
+    color: "from-teal-500/20 to-emerald-500/10",
+    accent: "#087f68",
   },
   {
     icon: Zap,
@@ -59,15 +59,15 @@ const FEATURES = [
     icon: Globe,
     title: "Custom Aliases",
     desc: "Create memorable slugs for your links and share them from your LinkPulse site.",
-    color: "from-pink-500/20 to-rose-500/10",
-    accent: "#ec4899",
+    color: "from-green-500/20 to-emerald-500/10",
+    accent: "#149b72",
   },
   {
     icon: CalendarClock,
     title: "Expiry & Click Limits",
     desc: "Set a time limit or maximum number of visits so temporary links stop working automatically.",
-    color: "from-fuchsia-500/20 to-pink-500/10",
-    accent: "#d946ef",
+    color: "from-lime-500/20 to-emerald-500/10",
+    accent: "#16805f",
   },
   {
     icon: Power,
@@ -80,8 +80,8 @@ const FEATURES = [
     icon: SunMoon,
     title: "Light & Dark Mode",
     desc: "Switch between comfortable light and dark themes, with your preference remembered for the next visit.",
-    color: "from-slate-500/20 to-violet-500/10",
-    accent: "#a78bfa",
+    color: "from-emerald-500/20 to-green-500/10",
+    accent: "#137a5c",
   },
   {
     icon: QrCode,
@@ -127,7 +127,6 @@ export default function FeaturesSection() {
               >
                 <feature.icon className="size-5" style={{ color: feature.accent }} />
               </div>
-
               {/* Feature title */}
               <h3 className="mt-5 text-base font-medium" style={{ color: "var(--text-primary)" }}>{feature.title}</h3>
 
