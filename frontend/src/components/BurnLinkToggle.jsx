@@ -1,21 +1,28 @@
-import React from 'react';
-
-// --- Added by Nikita: One-Time Burn Link Component ---
 export default function BurnLinkToggle({ isBurnEnabled, setIsBurnEnabled }) {
   return (
-    <div className="my-3 flex items-center gap-3 rounded-lg border border-purple-500/30 bg-gray-800/50 p-3">
-      <input 
-        type="checkbox" 
-        id="burnToggle"
+    <div
+      className="flex items-start gap-3 rounded-2xl border p-4"
+      style={{ borderColor: "var(--border)", background: "var(--surface)" }}
+    >
+      <input
+        type="checkbox"
+        id="burn-link-toggle"
         checked={isBurnEnabled}
         onChange={(e) => setIsBurnEnabled(e.target.checked)}
-        className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+        className="mt-1 h-4 w-4 shrink-0"
+        style={{ accentColor: "var(--text-accent)" }}
       />
       <div>
-        <label htmlFor="burnToggle" className="cursor-pointer text-sm font-medium text-white">
-          One-Time Burn Link (Self-Destruct)
+        <label
+          htmlFor="burn-link-toggle"
+          className="cursor-pointer text-sm font-medium"
+          style={{ color: "var(--text-primary)" }}
+        >
+          One-time link
         </label>
-        <p className="text-xs text-gray-400">URL automatically deletes after 1 click to prevent data leaks.</p>
+        <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+          Allow one verified click, then block future redirects.
+        </p>
       </div>
     </div>
   );

@@ -5,12 +5,12 @@
 //  1. SHORTENER FORM     — URL, alias, password, expiry date, click limit
 //  2. STATS CARDS        — Total Clicks, Active Links, Shield Status
 //  3. LINKS TABLE        — User ke saare links + analytics popover
-// 4. ONE-TIME BURN LINK – Self-destruct URL after 1 click (Feature Idea added by Nikita)
+// 4. ONE-TIME LINK – Blocks future redirects after one verified click
 
 import { createPortal } from "react-dom"
 import { useEffect, useRef, useState } from "react"
 import {
-  ArrowUpRight, BarChart2, Calendar, Check, Copy,
+  ArrowUpRight, BarChart2, Calendar, Check, Copy, Flame,
   Eye, EyeOff, Hash, KeyRound, Link2, LockKeyhole,
   ShieldCheck, Smartphone, Monitor, Trash2, X,
 } from "lucide-react"
@@ -18,6 +18,7 @@ import GlassCard from "../ui-custom/GlassCard"
 import AnimatedCounter from "../ui-custom/AnimatedCounter"
 import { supabase } from "../../supabase"
 import CompactAnalytics from "./CompactAnalytics"
+import BurnLinkToggle from "../BurnLinkToggle"
 
 export default function ShortenerSection({
   sectionRef,
@@ -33,6 +34,7 @@ export default function ShortenerSection({
   password, setPassword,
   expiresAt, setExpiresAt,
   clickLimit, setClickLimit,
+  isBurnEnabled, setIsBurnEnabled,
   errorMessage,
   generating,
   copied,
@@ -156,10 +158,11 @@ export default function ShortenerSection({
                 <input
                   type="number"
                   min="1"
-                  value={clickLimit}
+                  value={isBurnEnabled ? "1" : clickLimit}
                   onChange={e => setClickLimit(e.target.value)}
-                  placeholder="e.g. 100"
-                  className="h-10 w-32 rounded-xl border px-3 text-xs outline-none transition"
+                  disabled={isBurnEnabled}
+                  placeholder={isBurnEnabled ? "One-time" : "e.g. 100"}
+                  className="h-10 w-32 rounded-xl border px-3 text-xs outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
                   style={{
                     borderColor: "var(--input-border)",
                     background: "var(--input-bg)",
@@ -169,12 +172,17 @@ export default function ShortenerSection({
               </div>
 
             </div>
+            <BurnLinkToggle
+              isBurnEnabled={isBurnEnabled}
+              setIsBurnEnabled={setIsBurnEnabled}
+            />
           </div>
           <LinkPreview
             alias={alias}
             passwordProtected={passwordProtected}
             expiresAt={expiresAt}
             clickLimit={clickLimit}
+            isBurnEnabled={isBurnEnabled}
           />
         </GlassCard>
         {errorMessage && (
@@ -235,7 +243,7 @@ export default function ShortenerSection({
   )
 }
 
-function LinkPreview({ alias, passwordProtected, expiresAt, clickLimit }) {
+function LinkPreview({ alias, passwordProtected, expiresAt, clickLimit, isBurnEnabled }) {
   const previewAlias = alias.trim() || "your-alias"
   return (
     <div className="link-preview">
@@ -246,8 +254,10 @@ function LinkPreview({ alias, passwordProtected, expiresAt, clickLimit }) {
       <div className="link-preview-tags">
         {passwordProtected && <span><LockKeyhole className="size-3" /> Protected</span>}
         {expiresAt && <span><Calendar className="size-3" /> Expiry set</span>}
-        {clickLimit && <span><Hash className="size-3" /> {clickLimit} clicks</span>}
-        {!passwordProtected && !expiresAt && !clickLimit && <span className="link-preview-ready"><Check className="size-3" /> Ready to publish</span>}
+        {isBurnEnabled
+          ? <span><Flame className="size-3" /> One-time click</span>
+          : clickLimit && <span><Hash className="size-3" /> {clickLimit} clicks</span>}
+        {!passwordProtected && !expiresAt && !clickLimit && !isBurnEnabled && <span className="link-preview-ready"><Check className="size-3" /> Ready to publish</span>}
       </div>
     </div>
   )
@@ -629,7 +639,9 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete 
                 } else if (isExpired) {
                   badgeClass = "status-disabled"; badgeLabel = "Expired"; badgeDot = "bg-amber-400"
                 } else if (isLimitHit) {
-                  badgeClass = "status-disabled"; badgeLabel = "Limit hit"; badgeDot = "bg-amber-400"
+                  badgeClass = "status-disabled"
+                  badgeLabel = Number(link.click_limit) === 1 ? "Used" : "Limit hit"
+                  badgeDot = "bg-amber-400"
                 } else if (link.password_hash) {
                   badgeClass = "status-protected"; badgeLabel = "Protected"; badgeDot = "bg-violet-400"
                 }
@@ -671,7 +683,9 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete 
                       {/* Click limit hint */}
                       {link.click_limit && !isLimitHit && (
                         <p className="mt-0.5 text-[10px] font-mono" style={{ color: "var(--text-faint)" }}>
-                          {link.clicks_count || 0}/{link.click_limit} clicks
+                          {Number(link.click_limit) === 1
+                            ? "One-time link · unused"
+                            : `${link.clicks_count || 0}/${link.click_limit} clicks`}
                         </p>
                       )}
                     </td>

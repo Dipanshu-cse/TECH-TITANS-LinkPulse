@@ -76,6 +76,7 @@ export function useLinkManager() {
   const [password, setPassword] = useState("")
   const [expiresAt, setExpiresAt] = useState("")      // ISO date string or ""
   const [clickLimit, setClickLimit] = useState("")    // numeric string or ""
+  const [isBurnEnabled, setIsBurnEnabled] = useState(false)
 
   // ── Data state ────────────────────────────────────────────────────────────
   const [links, setLinks] = useState([])
@@ -117,7 +118,9 @@ export function useLinkManager() {
     [links]
   )
   const activeLinksCount = useMemo(
-    () => links.filter(link => !link.is_disabled).length,
+    () => links.filter(link => !link.is_disabled
+      && (link.click_limit === null || link.click_limit === undefined
+        || (Number(link.clicks_count) || 0) < Number(link.click_limit))).length,
     [links]
   )
 
@@ -161,7 +164,9 @@ export function useLinkManager() {
       // Click limit check
       if (data.click_limit !== null && data.click_limit !== undefined) {
         if ((data.clicks_count || 0) >= data.click_limit) {
-          setRedirectError("This link has reached its maximum click limit.")
+          setRedirectError(Number(data.click_limit) === 1
+            ? "This one-time link has already been used."
+            : "This link has reached its maximum click limit.")
           setRedirecting(false)
           return
         }
@@ -235,9 +240,13 @@ export function useLinkManager() {
         setRedirecting(false)
         return
       } else if (!visitorClassification.isBot && !clickResult?.counted) {
-        setRedirectError(clickResult?.status === "limit_reached"
-          ? "This link has reached its maximum click limit."
-          : "This link could not be counted safely. Please try again.")
+        if (clickResult?.status === "limit_reached") {
+          setRedirectError(Number(data.click_limit) === 1
+            ? "This one-time link has already been used."
+            : "This link has reached its maximum click limit.")
+        } else {
+          setRedirectError("This link could not be counted safely. Please try again.")
+        }
         setRedirecting(false)
         return
       }
@@ -325,7 +334,7 @@ export function useLinkManager() {
       return
     }
 
-    const parsedClickLimit = clickLimit.trim() ? Number(clickLimit) : null
+    const parsedClickLimit = isBurnEnabled ? 1 : clickLimit.trim() ? Number(clickLimit) : null
     if (parsedClickLimit !== null && (!Number.isInteger(parsedClickLimit) || parsedClickLimit < 1)) {
       setErrorMessage("Click limit must be a whole number greater than zero.")
       return
@@ -384,6 +393,7 @@ export function useLinkManager() {
       setPasswordProtected(false)
       setExpiresAt("")
       setClickLimit("")
+      setIsBurnEnabled(false)
 
       // Success modal dikhao
       setCreatedModal({
@@ -461,6 +471,7 @@ export function useLinkManager() {
     password, setPassword,
     expiresAt, setExpiresAt,
     clickLimit, setClickLimit,
+    isBurnEnabled, setIsBurnEnabled,
     // Data state
     links,
     loading,

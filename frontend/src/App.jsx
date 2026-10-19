@@ -160,6 +160,8 @@ export default function LinkPulsePage() {
         setExpiresAt={linkManager.setExpiresAt}
         clickLimit={linkManager.clickLimit}
         setClickLimit={linkManager.setClickLimit}
+        isBurnEnabled={linkManager.isBurnEnabled}
+        setIsBurnEnabled={linkManager.setIsBurnEnabled}
         errorMessage={linkManager.errorMessage || linkManager.redirectError}
       />
       {/* 3. Features Section — feature cards grid */}
