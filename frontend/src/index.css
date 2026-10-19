@@ -347,7 +347,7 @@ html.theme-transitioning body {
   100% { filter: brightness(1) saturate(1); }
 }
 
-/* ─── Signal boot sequence ───────────────────────────────────────────────── */
+/* ─── LinkPulse type-in intro ─────────────────────────────────────────────── */
 .intro-screen {
   position: fixed;
   inset: 0;
@@ -357,142 +357,60 @@ html.theme-transitioning body {
   place-items: center;
   pointer-events: none;
   color: #fff;
-  background: #06050d;
   isolation: isolate;
   clip-path: inset(0);
-  transition: clip-path 1.2s cubic-bezier(0.76, 0, 0.24, 1);
+  background: #030405;
+  transition: clip-path 760ms cubic-bezier(0.76, 0, 0.24, 1);
 }
 .intro-screen--reveal {
   clip-path: inset(0 0 100% 0);
 }
-.intro-noise,
-.intro-grid,
-.intro-aura {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.intro-noise {
-  opacity: 0.09;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
-  mix-blend-mode: screen;
-}
-.intro-grid {
-  opacity: 0.34;
-  background-image: linear-gradient(rgba(161, 125, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(161, 125, 255, 0.08) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse at center, black, transparent 72%);
-}
-.intro-aura {
-  background: radial-gradient(circle at 50% 45%, rgba(124, 58, 237, 0.3), transparent 25%), radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.1), transparent 50%);
-  animation: introAura 4s ease-in-out infinite;
-}
 .intro-content {
   position: relative;
   z-index: 1;
+  max-width: calc(100vw - 32px);
+  animation: introContentIn 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.intro-title {
   display: flex;
   align-items: center;
-  flex-direction: column;
-  gap: 20px;
-  animation: introContentIn 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  margin: 0;
+  color: #f5f7fb;
+  font-family: 'IBM Plex Sans', Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(3rem, 12vw, 9rem);
+  font-weight: 700;
+  letter-spacing: -0.065em;
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow: 0 0 48px rgba(40, 144, 255, 0.16);
 }
-.intro-mark {
-  position: relative;
-  width: 112px;
-  height: 112px;
-  display: grid;
-  place-items: center;
+.intro-title-link {
+  color: #f5f7fb;
 }
-.intro-mark-core {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  width: 58px;
-  height: 58px;
-  border: 1px solid rgba(255,255,255,0.7);
-  border-radius: 18px;
-  background: linear-gradient(135deg, rgba(167, 139, 250, 0.32), rgba(37, 99, 235, 0.16));
-  box-shadow: 0 0 35px rgba(139, 92, 246, 0.6), inset 0 0 22px rgba(255,255,255,0.12);
-  font: 600 18px 'IBM Plex Mono', monospace;
-  letter-spacing: -0.08em;
-  padding-right: 3px;
+.intro-title-pulse {
+  color: #168cf4;
+  background: linear-gradient(105deg, #168cf4 12%, #35c8ff 88%);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
-.intro-mark-ring {
-  position: absolute;
-  border: 1px solid rgba(167, 139, 250, 0.34);
-  border-radius: 50%;
+.intro-caret {
+  flex: 0 0 clamp(2px, 0.035em, 4px);
+  width: clamp(2px, 0.035em, 4px);
+  height: 0.78em;
+  margin-left: 0.12em;
+  background: #35c8ff;
+  box-shadow: 0 0 20px rgba(53, 200, 255, 0.65);
+  animation: introCaretBlink 820ms steps(2, start) infinite;
 }
-.intro-mark-ring--outer {
-  inset: 0;
-  border-right-color: rgba(255,255,255,0.8);
-  animation: introSpin 5s linear infinite;
+@keyframes introContentIn { from { opacity: 0; transform: translateY(14px); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes introCaretBlink { to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .intro-screen { transition-duration: 180ms; }
+  .intro-content, .intro-caret {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
-.intro-mark-ring--inner {
-  inset: 13px;
-  border-left-color: rgba(96, 165, 250, 0.85);
-  animation: introSpin 3.2s linear infinite reverse;
-}
-.intro-wordmark {
-  font: 500 clamp(18px, 3vw, 28px) 'IBM Plex Mono', monospace;
-  letter-spacing: 0.32em;
-  padding-left: 0.32em;
-  text-shadow: 0 0 28px rgba(167, 139, 250, 0.55);
-}
-.intro-wordmark b { color: #6ee7b7; font-weight: 500; }
-.intro-status {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  color: rgba(255,255,255,0.48);
-  font: 10px 'IBM Plex Mono', monospace;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-.intro-status-code { margin-left: 14px; color: rgba(167,139,250,0.8); }
-.intro-status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #34d399;
-  box-shadow: 0 0 12px #34d399;
-  animation: introPulse 1s ease-in-out infinite;
-}
-.intro-progress {
-  position: absolute;
-  z-index: 1;
-  right: 8vw;
-  bottom: 10vh;
-  left: 8vw;
-  height: 1px;
-  background: rgba(255,255,255,0.12);
-}
-.intro-progress span {
-  display: block;
-  width: 0;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, #34d399 40%, #6ee7b7);
-  box-shadow: 0 0 14px #10b981;
-  animation: introProgress 2.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-.intro-corner {
-  position: absolute;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  color: rgba(255,255,255,0.28);
-  font: 9px 'IBM Plex Mono', monospace;
-  letter-spacing: 0.16em;
-}
-.intro-corner span { color: rgba(167,139,250,0.65); }
-.intro-corner--tl { top: 7vh; left: 7vw; }
-.intro-corner--br { right: 7vw; bottom: 7vh; text-align: right; }
-@keyframes introContentIn { from { opacity: 0; transform: translateY(18px) scale(0.94); filter: blur(10px); } to { opacity: 1; transform: none; filter: none; } }
-@keyframes introAura { 50% { transform: scale(1.12); opacity: 0.72; } }
-@keyframes introSpin { to { transform: rotate(360deg); } }
-@keyframes introPulse { 50% { opacity: 0.35; transform: scale(0.65); } }
-@keyframes introProgress { to { width: 100%; } }
 
 /* ─── Cursor Experience ───────────────────────────────────────────────────── */
 .custom-cursor-layer {

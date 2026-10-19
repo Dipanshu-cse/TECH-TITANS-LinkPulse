@@ -38,8 +38,8 @@
 //  │       ├── CreatedModal.jsx       — link successfully create hone ka modal
 //  │       └── RedirectLoader.jsx     — redirect hone ka loading screen
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import { IntroAnimation, HERO_REVEAL_MS } from "./components/intro-animation"
+import { useCallback, useRef, useState } from "react"
+import { IntroAnimation } from "./components/intro-animation"
 import { MobileNav } from "./components/mobile-nav"
 
 // ── Custom Hooks ──────────────────────────────────────────────────────────────
@@ -71,15 +71,13 @@ export default function LinkPulsePage() {
   // ── Intro Animation State ─────────────────────────────────────────────────
   // heroReady = intro animation khatam hua? (tab hero text dikhao)
   const [heroReady, setHeroReady] = useState(false)
-  const handleIntroDone = useCallback(() => setHeroReady(true), [])
-
-  // Background video intro ke reveal ke saath zoom-in hota hai.
   const [videoReady, setVideoReady] = useState(false)
-  useEffect(() => {
-    const timer = setTimeout(() => setVideoReady(true), HERO_REVEAL_MS)
-    return () => clearTimeout(timer)
+  const handleIntroDone = useCallback(() => {
+    setHeroReady(true)
+    setVideoReady(true)
   }, [])
 
+  // Background video intro ke reveal ke saath zoom-in hota hai.
   // ── Scroll Refs ───────────────────────────────────────────────────────────
   // Shortener section pe smooth scroll karne ke liye
   const shortenerRef = useRef(null)
