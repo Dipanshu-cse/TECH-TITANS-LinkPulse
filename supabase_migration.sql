@@ -36,7 +36,15 @@ alter table public.clicks
   add column if not exists ip_address text,
   add column if not exists user_agent text,
   add column if not exists device_type text,
-  add column if not exists country text;
+  add column if not exists country text,
+  add column if not exists is_ghost boolean not null default false,
+  add column if not exists ghost_reason text,
+  add column if not exists is_bot boolean not null default false,
+  add column if not exists bot_reason text,
+  add column if not exists source_platform text,
+  add column if not exists traffic_class text not null default 'verified',
+  add column if not exists validation_reasons text[] not null default '{}',
+  add column if not exists counted boolean not null default false;
 
 create index if not exists links_visitor_id_idx
   on public.links (visitor_id);
@@ -46,6 +54,77 @@ create index if not exists links_short_code_idx
 
 create index if not exists clicks_link_id_created_at_idx
   on public.clicks (link_id, created_at desc);
+
+create or replace function public.record_click_event(
+  p_link_id bigint,
+  p_user_agent text,
+  p_device_type text,
+  p_is_ghost boolean,
+  p_is_bot boolean,
+  p_bot_reason text,
+  p_source_platform text,
+  p_traffic_class text,
+  p_validation_reasons text[]
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  target_link public.links%rowtype;
+  was_counted boolean := false;
+  event_status text := 'filtered';
+begin
+  select * into target_link
+  from public.links
+  where id = p_link_id
+  for update;
+
+  if not found then
+    raise exception 'Link not found';
+  end if;
+
+  if target_link.is_disabled then
+    raise exception 'Link is disabled';
+  end if;
+
+  if target_link.expires_at is not null and target_link.expires_at <= now() then
+    raise exception 'Link has expired';
+  end if;
+
+  if not p_is_bot and not p_is_ghost
+     and (target_link.click_limit is null or target_link.clicks_count < target_link.click_limit) then
+    update public.links
+    set clicks_count = clicks_count + 1
+    where id = p_link_id;
+    was_counted := true;
+    event_status := 'counted';
+  elsif not p_is_bot and not p_is_ghost then
+    event_status := 'limit_reached';
+  elsif p_is_bot then
+    event_status := 'bot_filtered';
+  elsif p_is_ghost then
+    event_status := 'ghost_filtered';
+  end if;
+
+  insert into public.clicks (
+    link_id, user_agent, device_type, is_ghost, ghost_reason,
+    is_bot, bot_reason, source_platform, traffic_class,
+    validation_reasons, counted
+  ) values (
+    p_link_id, p_user_agent, p_device_type, p_is_ghost,
+    case when p_is_ghost then 'rapid_repeat' else null end,
+    p_is_bot, p_bot_reason, p_source_platform, p_traffic_class,
+    coalesce(p_validation_reasons, '{}'), was_counted
+  );
+
+  return jsonb_build_object('counted', was_counted, 'status', event_status);
+end;
+$$;
+
+revoke all on function public.record_click_event(bigint, text, text, boolean, boolean, text, text, text, text[]) from public;
+grant execute on function public.record_click_event(bigint, text, text, boolean, boolean, text, text, text, text[]) to anon, authenticated;
 
 -- The client hashes new passwords with SHA-256 before inserting them.
 -- Existing plaintext values in password_hash must be recreated or migrated
@@ -80,10 +159,8 @@ create policy "linkpulse delete browser link"
   using (true);
 
 drop policy if exists "linkpulse record click" on public.clicks;
-create policy "linkpulse record click"
-  on public.clicks for insert
-  to anon, authenticated
-  with check (link_id is not null);
+-- Click rows are written only by record_click_event(), which performs the
+-- atomic validation and counter update under SECURITY DEFINER.
 
 drop policy if exists "linkpulse read click analytics" on public.clicks;
 create policy "linkpulse read click analytics"
