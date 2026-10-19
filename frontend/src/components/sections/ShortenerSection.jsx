@@ -5,6 +5,7 @@
 //  1. SHORTENER FORM     — URL, alias, password, expiry date, click limit
 //  2. STATS CARDS        — Total Clicks, Active Links, Shield Status
 //  3. LINKS TABLE        — User ke saare links + analytics popover
+// 4. ONE-TIME BURN LINK – Self-destruct URL after 1 click (Feature Idea added by Nikita)
 
 import { createPortal } from "react-dom"
 import { useEffect, useRef, useState } from "react"
