@@ -18,6 +18,8 @@ pnpm-debug.log*
 .env
 .env.*
 !.env.example
+# Public browser config intentionally included for the hackathon demo
+!frontend/.env
 
 .vscode/*
 !.vscode/extensions.json
