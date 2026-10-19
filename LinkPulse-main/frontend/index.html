@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- No-flash theme init: runs before CSS/React, prevents white/dark flicker -->
+    <script>
+      (function() {
+        try {
+          var t = localStorage.getItem('lp_theme') || localStorage.getItem('linkpulse_theme') || 'dark';
+          document.documentElement.setAttribute('data-theme', t);
+        } catch(e) {}
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- LinkPulse SEO & Fonts -->
+    <title>LinkPulse — Intelligent URL Management</title>
+    <meta name="description" content="Secure URL shortening, GhostClick™ bot protection, real-time analytics, and bulk CSV link management with LinkPulse." />
+    
+    <!-- Google Fonts: IBM Plex Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
