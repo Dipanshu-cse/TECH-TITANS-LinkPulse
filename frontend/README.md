@@ -26,6 +26,11 @@ npm run lint
 npm run build
 ```
 
+## Theme
+
+The app starts in dark mode on every page load. The theme toggle can switch to
+light mode for the current session; reloading returns the app to dark mode.
+
 ## Deploy to Vercel
 
 1. Push the repository to GitHub.
