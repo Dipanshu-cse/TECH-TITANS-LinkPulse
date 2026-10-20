@@ -38,7 +38,7 @@
 //  │       ├── CreatedModal.jsx       — link successfully create hone ka modal
 //  │       └── RedirectLoader.jsx     — redirect hone ka loading screen
 
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { IntroAnimation } from "./components/intro-animation"
 import { MobileNav } from "./components/mobile-nav"
 
@@ -68,6 +68,38 @@ export default function LinkPulsePage() {
   // ── Link Manager hook — database + form logic ────────────────────────────
   const linkManager = useLinkManager()
 
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    if (prefersReducedMotion || !("IntersectionObserver" in window)) return
+
+    const elements = document.querySelectorAll(
+      "main > section:not(.hero), .feature-card, .step-card, .faq-item",
+    )
+    const staggeredClasses = ["feature-card", "step-card", "faq-item"]
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return
+        entry.target.classList.add("is-visible")
+        observer.unobserve(entry.target)
+      })
+    }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" })
+
+    elements.forEach((element) => {
+      const staggerClass = staggeredClasses.find((className) => element.classList.contains(className))
+      if (staggerClass) {
+        const siblings = Array.from(element.parentElement?.children ?? [])
+          .filter((sibling) => sibling.classList.contains(staggerClass))
+        const delay = Math.min(siblings.indexOf(element) * 70, 280)
+        element.style.setProperty("--scroll-reveal-delay", `${delay}ms`)
+      }
+
+      element.classList.add("scroll-reveal")
+      observer.observe(element)
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
   // ── Intro Animation State ─────────────────────────────────────────────────
   // heroReady = intro animation khatam hua? (tab hero text dikhao)
   const [heroReady, setHeroReady] = useState(false)
@@ -82,10 +114,18 @@ export default function LinkPulsePage() {
   // Shortener section pe smooth scroll karne ke liye
   const shortenerRef = useRef(null)
   const scrollToShortener = () => shortenerRef.current?.scrollIntoView({ behavior: "smooth" })
+  const focusShortener = () => {
+    scrollToShortener()
+    window.setTimeout(() => document.getElementById("long-url")?.focus({ preventScroll: true }), 450)
+  }
   const scrollToFeatures = () => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })
   const analyticsRef = useRef(null)
   const openAnalytics = () => analyticsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   const viewLinks = () => linkManager.tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  const createAnotherLink = () => {
+    linkManager.closeModal()
+    focusShortener()
+  }
 
   // ── Redirect Screen ───────────────────────────────────────────────────────
   // Agar koi shortened link open kara ja raha hai to sirf loading screen dikhao
@@ -134,6 +174,7 @@ export default function LinkPulsePage() {
         tableRef={linkManager.tableRef}
         analyticsRef={analyticsRef}
         onViewLinks={viewLinks}
+        onCreateLink={focusShortener}
         links={linkManager.links}
         loading={linkManager.loading}
         totalClicks={linkManager.totalClicks}
@@ -185,6 +226,7 @@ export default function LinkPulsePage() {
         onCopy={linkManager.copyLink}
         onClose={linkManager.closeModal}
         onViewTable={linkManager.viewInTable}
+        onCreateAnother={createAnotherLink}
       />
     </main>
   )

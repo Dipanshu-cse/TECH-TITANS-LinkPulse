@@ -18,7 +18,7 @@ import { useEffect, useState } from "react"
 import QRCode from "qrcode"
 import { Check, Copy, Download, ExternalLink, LockKeyhole, Share2, X } from "lucide-react"
 
-export default function CreatedModal({ modalData, copied, onCopy, onClose, onViewTable }) {
+export default function CreatedModal({ modalData, copied, onCopy, onClose, onViewTable, onCreateAnother }) {
   const [qrCode, setQrCode] = useState("")
   const [qrError, setQrError] = useState("")
   const [qrFor, setQrFor] = useState("")
@@ -71,7 +71,7 @@ export default function CreatedModal({ modalData, copied, onCopy, onClose, onVie
     >
 
       {/* Modal card — stopPropagation so clicking inside doesn't close */}
-      <div className="modal-card" onClick={e => e.stopPropagation()}>
+      <div className="modal-card" role="dialog" aria-modal="true" aria-label="Link created" onClick={e => e.stopPropagation()}>
 
         {/* Confetti dots */}
         <div className="modal-confetti" aria-hidden="true">
@@ -86,6 +86,7 @@ export default function CreatedModal({ modalData, copied, onCopy, onClose, onVie
           onClick={onClose}
           className="absolute right-4 top-4 rounded-full p-2 transition-colors"
           style={{ color: "var(--text-muted)", zIndex: 20 }}
+        aria-label="Close link created dialog"
         >
           <X className="size-4" />
         </button>
@@ -128,6 +129,7 @@ export default function CreatedModal({ modalData, copied, onCopy, onClose, onVie
                 rel="noopener noreferrer"
                 className="rounded-xl border p-2 transition-colors"
                 style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text-muted)" }}
+                aria-label="Open short link in a new tab"
               >
                 <ExternalLink className="size-3.5" />
               </a>
@@ -175,14 +177,18 @@ export default function CreatedModal({ modalData, copied, onCopy, onClose, onVie
           </div>
 
           {/* ── Bottom actions ─────────────────────────────────────────────── */}
-          <div className="mt-5 flex justify-end gap-2">
+          <div className="mt-5 flex flex-wrap justify-end gap-2">
             {/* "View in table" — modal close karo aur table pe scroll karo */}
             <button
+              type="button"
               onClick={onViewTable}
               className="rounded-xl border px-4 py-2 text-xs transition-colors hover:bg-violet-500/10"
               style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
             >
               View in table
+            </button>
+            <button type="button" onClick={onCreateAnother} className="cta-primary">
+              Create another link
             </button>
           </div>
         </div>

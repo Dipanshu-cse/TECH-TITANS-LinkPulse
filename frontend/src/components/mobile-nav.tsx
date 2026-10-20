@@ -8,7 +8,7 @@ import lightThemeLogo from "../assets/linkpulse-logo-light.png"
 const NAV_LINKS = [
   { label: "Features", href: "#features" },
   { label: "How It Works", href: "#how-it-works" },
-  { label: "Click Tracking", href: "#shortener" },
+  { label: "Create a Link", href: "#shortener" },
   { label: "Your Links", href: "#your-links" },
   { label: "Click Analytics", href: "#analytics" },
 ]
@@ -29,11 +29,12 @@ export function MobileNav({ onGetStarted, onOpenAnalytics, theme, onToggleTheme 
     <div className="fixed top-0 inset-x-0 z-50 pointer-events-none">
       <div className="pointer-events-auto w-full">
         <nav
-          className="flex items-center justify-between px-5 py-3"
+          className="flex items-center justify-between px-5 py-3 md:px-9 md:py-3.5"
           style={{
             borderBottom: "1px solid var(--nav-border)",
             background: "var(--nav-bg)",
             boxShadow: "0 8px 28px var(--nav-shadow)",
+            paddingTop: "calc(0.75rem + env(safe-area-inset-top))",
           }}
         >
           <div className="flex items-center gap-2.5">
@@ -64,13 +65,7 @@ export function MobileNav({ onGetStarted, onOpenAnalytics, theme, onToggleTheme 
             </button>
             <button
               onClick={onGetStarted}
-              className="nav-cta hidden md:inline-flex items-center gap-2"
-              style={{
-                fontSize: 12, padding: "7px 16px", borderRadius: 100,
-                background: "linear-gradient(135deg, #10b981 0%, #0f766e 100%)",
-                border: "none", color: "white", fontWeight: 500,
-                boxShadow: "0 4px 16px rgba(16,185,129,0.28)",
-              }}
+              className="nav-cta hidden md:inline-flex items-center justify-center gap-2"
             >
               Get Started <ArrowUpRight className="size-3" />
             </button>
@@ -86,7 +81,7 @@ export function MobileNav({ onGetStarted, onOpenAnalytics, theme, onToggleTheme 
           </div>
         </nav>
 
-        <div className="md:hidden mt-2 overflow-hidden transition-all duration-300" style={{ maxHeight: open ? 360 : 0, opacity: open ? 1 : 0 }}>
+        <div className="md:hidden mt-2 overflow-hidden transition-all duration-300" style={{ maxHeight: open ? 520 : 0, opacity: open ? 1 : 0 }}>
           <div className="px-2 py-2 flex flex-col gap-0.5"
             style={{ borderBottom: "1px solid var(--nav-border)", borderLeft: "1px solid var(--nav-border)", borderRight: "1px solid var(--nav-border)", background: "var(--nav-bg)" }}>
             {NAV_LINKS.map(link => (
@@ -102,8 +97,7 @@ export function MobileNav({ onGetStarted, onOpenAnalytics, theme, onToggleTheme 
                 {isDark ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
               </button>
             </div>
-            <button onClick={() => { onGetStarted(); close() }} className="nav-cta mx-2 mb-1 rounded-[14px] py-3 text-[13px] font-medium text-white"
-              style={{ background: "linear-gradient(135deg, #10b981 0%, #0f766e 100%)", border: "none" }}>
+            <button onClick={() => { onGetStarted(); close() }} className="nav-cta mx-2 mb-1 rounded-xl py-3 text-[13px] font-medium">
               Get Started Free →
             </button>
           </div>

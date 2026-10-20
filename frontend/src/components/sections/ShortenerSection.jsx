@@ -44,6 +44,7 @@ export default function ShortenerSection({
   onDelete,
   analyticsRef,
   onViewLinks,
+  onCreateLink,
 }) {
   return (
     <section
@@ -58,8 +59,8 @@ export default function ShortenerSection({
           <div className="section-badge mx-auto mb-4">
             <Link2 className="size-3.5 text-violet-400" /> CREATE
           </div>
-          <h2 className="section-title">Create your secure LinkPulse URL.</h2>
-          <p className="section-sub mx-auto">Paste, customize, and launch your link in under 3 seconds.</p>
+          <h2 className="section-title">Shorten a link</h2>
+          <p className="section-sub mx-auto">Paste a long URL to get started. Add an alias or security settings only if you need them.</p>
           <button type="button" onClick={onViewLinks} className="mt-5 inline-flex items-center gap-2 text-xs text-violet-400 transition hover:text-violet-300">
             View your shortened links <ArrowUpRight className="size-3.5" />
           </button>
@@ -67,6 +68,7 @@ export default function ShortenerSection({
 
         {/* ── Shortener Form Card ─────────────────────────────────────────── */}
         <GlassCard glow className="p-6 md:p-10">
+          <form id="shortener-form" onSubmit={onSubmit}>
           <ShortenerForm
             longUrl={longUrl}
             setLongUrl={setLongUrl}
@@ -75,7 +77,6 @@ export default function ShortenerSection({
             aliasError={aliasError}
             setAliasError={setAliasError}
             generating={generating}
-            onSubmit={onSubmit}
           />
 
           {/* ── Advanced options row ───────────────────────────────────────── */}
@@ -113,6 +114,7 @@ export default function ShortenerSection({
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="Set secret password"
+                    aria-label="Password required to open this link"
                     className="h-10 rounded-xl border pl-9 pr-4 text-xs outline-none transition"
                     style={{
                       borderColor: "var(--input-border)",
@@ -184,6 +186,7 @@ export default function ShortenerSection({
             clickLimit={clickLimit}
             isBurnEnabled={isBurnEnabled}
           />
+          </form>
         </GlassCard>
         {errorMessage && (
           <div
@@ -225,7 +228,6 @@ export default function ShortenerSection({
           </GlassCard>
         </div>
 
-        <CompactAnalytics analyticsRef={analyticsRef} />
 
         {/* ── Links Table ─────────────────────────────────────────────────── */}
         <div ref={tableRef} id="your-links" className="scroll-mt-24">
@@ -236,8 +238,10 @@ export default function ShortenerSection({
             onCopy={onCopy}
             onToggleDisable={onToggleDisable}
             onDelete={onDelete}
+            onCreateLink={onCreateLink}
           />
         </div>
+        <CompactAnalytics analyticsRef={analyticsRef} />
       </div>
     </section>
   )
@@ -264,12 +268,9 @@ function LinkPreview({ alias, passwordProtected, expiresAt, clickLimit, isBurnEn
 }
 
 // ─── ShortenerForm ─────────────────────────────────────────────────────────────
-function ShortenerForm({ longUrl, setLongUrl, alias, setAlias, aliasError, setAliasError, generating, onSubmit }) {
+function ShortenerForm({ longUrl, setLongUrl, alias, setAlias, aliasError, setAliasError, generating }) {
   return (
-    <form
-      onSubmit={onSubmit}
-      className="shortener-form grid gap-6 lg:grid-cols-[1fr_0.8fr_auto] lg:items-start"
-    >
+    <div className="shortener-form grid gap-6 lg:grid-cols-[1fr_0.8fr_auto] lg:items-start">
       {/* Long URL */}
       <label className="flex flex-col gap-2 text-xs uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
         Long URL
@@ -278,7 +279,8 @@ function ShortenerForm({ longUrl, setLongUrl, alias, setAlias, aliasError, setAl
           type="url"
           value={longUrl}
           onChange={e => setLongUrl(e.target.value)}
-          placeholder="https://your-very-long-link.com/path?with=params"
+          id="long-url"
+          placeholder="Paste your long URL here (https://…)"
           className="form-input"
           aria-describedby="destination-help"
         />
@@ -287,7 +289,6 @@ function ShortenerForm({ longUrl, setLongUrl, alias, setAlias, aliasError, setAl
         </span>
       </label>
 
-      {/* Custom Alias */}
       <div className="flex flex-col justify-end">
         <label className="flex flex-col gap-2 text-xs uppercase tracking-[0.16em]" style={{ color: "var(--text-muted)" }}>
           <div className="flex items-center justify-between">
@@ -298,7 +299,7 @@ function ShortenerForm({ longUrl, setLongUrl, alias, setAlias, aliasError, setAl
             <span className="shrink-0 text-xs" style={{ color: "var(--text-faint)" }}>go.lp/</span>
             <input
               value={alias}
-              onChange={e => { setAlias(e.target.value); if (aliasError) setAliasError("") }}
+              onChange={event => { setAlias(event.target.value); if (aliasError) setAliasError("") }}
               placeholder="your-alias"
               pattern="[a-zA-Z0-9_-]{3,40}"
               title="Use 3–40 letters, numbers, hyphens, or underscores."
@@ -318,10 +319,10 @@ function ShortenerForm({ longUrl, setLongUrl, alias, setAlias, aliasError, setAl
       {/* Generate button */}
       <button type="submit" disabled={generating} className="cta-generate">
         {generating
-          ? <><span className="generate-spinner" /> Generating...</>
-          : <>Generate <ArrowUpRight className="size-4" /></>}
+          ? <><span className="generate-spinner" /> Creating link...</>
+          : <>Create short link <ArrowUpRight className="size-4" /></>}
       </button>
-    </form>
+    </div>
   )
 }
 
@@ -512,7 +513,7 @@ function AnalyticsPopover({ linkId, shortCode, anchorEl, onClose }) {
 }
 
 // ─── LinksTable ─────────────────────────────────────────────────────────────────
-function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete }) {
+function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete, onCreateLink }) {
   // openPopover = { id, anchorEl } of the open analytics popover, or null
   const [openPopover, setOpenPopover] = useState(null)
   const [query, setQuery] = useState("")
@@ -540,15 +541,11 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete 
       >
         <div>
           <h3 className="text-base font-medium" style={{ color: "var(--text-primary)" }}>
-            Recently shortened links
+            Your links <span className="ml-2 text-xs font-normal" style={{ color: "var(--text-muted)" }}>{links.length}</span>
           </h3>
           <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
-            Your private workspace activity, live from Supabase.
+            Search, copy, and manage your shortened links.
           </p>
-        </div>
-        <div className="flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1">
-          <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[10px] uppercase tracking-widest text-emerald-400/70">Live</span>
         </div>
       </div>
 
@@ -567,6 +564,7 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete 
               key={value}
               type="button"
               onClick={() => setStatusFilter(value)}
+              aria-pressed={statusFilter === value}
               className="rounded-full border px-3 py-1.5 text-[10px] uppercase tracking-wider transition"
               style={statusFilter === value
                 ? { borderColor: "rgba(16,185,129,0.40)", background: "rgba(16,185,129,0.10)", color: "#087f68" }
@@ -576,6 +574,9 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete 
             </button>
           ))}
         </div>
+        <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>
+          Showing {filteredLinks.length} of {links.length}
+        </span>
       </div>
 
       {/* Scrollable table */}
@@ -600,7 +601,7 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete 
                 <td colSpan="5" className="px-6 py-10 text-center text-xs" style={{ color: "var(--text-muted)" }}>
                   <div className="flex items-center justify-center gap-2">
                     <span className="size-4 rounded-full border-2 border-violet-500/40 border-t-violet-500 animate-spin" />
-                    Connecting to database...
+                    Loading your links...
                   </div>
                 </td>
               </tr>
@@ -611,15 +612,22 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete 
                 <td colSpan="5" className="px-6 py-12 text-center">
                   <div className="flex flex-col items-center gap-3">
                     <Link2 className="size-8 text-white/10" strokeWidth={1} />
-                    <p className="text-xs" style={{ color: "var(--text-faint)" }}>No links yet. Create your first link above.</p>
+                    <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Your first short link starts here</p>
+                    <p className="max-w-sm text-xs" style={{ color: "var(--text-muted)" }}>Paste a long URL in the form above and create a short, easy-to-share link.</p>
+                    <button type="button" onClick={onCreateLink} className="cta-primary mt-2">
+                      Create your first link <ArrowUpRight className="size-4" />
+                    </button>
                   </div>
                 </td>
               </tr>
 
             ) : filteredLinks.length === 0 ? (
               <tr>
-                <td colSpan="5" className="px-6 py-12 text-center text-xs" style={{ color: "var(--text-muted)" }}>
-                  No links match these filters.
+                <td colSpan="5" className="px-6 py-12 text-center">
+                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>No links match your search or filter.</p>
+                  <button type="button" onClick={() => { setQuery(""); setStatusFilter("all") }} className="mt-3 text-xs text-violet-400 hover:underline">
+                    Clear search and filters
+                  </button>
                 </td>
               </tr>
             ) : (
@@ -668,6 +676,7 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete 
                           className="inline-flex items-center p-1 transition-colors"
                           style={{ color: "var(--text-faint)" }}
                           title="Copy link"
+                          aria-label={`Copy ${displayBrand}`}
                         >
                           {copied === directUrl
                             ? <Check className="size-3 text-emerald-400" />
@@ -736,6 +745,7 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete 
                           className="inline-flex items-center p-1.5 rounded-lg transition-colors"
                           style={{ color: openPopover?.id === link.id ? "#087f68" : "var(--text-faint)" }} 
                           title="View analytics"
+                          aria-label={`View analytics for ${displayBrand}`}
                         >
                           <BarChart2 className="size-3.5" />
                         </button>
@@ -747,6 +757,7 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete 
                           className="inline-flex items-center p-1.5 rounded-lg transition-colors"
                           style={{ color: "var(--text-faint)" }}
                           title={link.is_disabled ? "Enable link" : "Disable link"}
+                          aria-label={link.is_disabled ? `Enable ${displayBrand}` : `Disable ${displayBrand}`}
                         >
                           {link.is_disabled
                             ? <Eye className="size-3.5 text-emerald-400" />
@@ -764,6 +775,7 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete 
                           className="inline-flex items-center p-1.5 rounded-lg transition-colors hover:text-rose-400"
                           style={{ color: "var(--text-faint)" }}
                           title="Delete link"
+                          aria-label={`Delete ${displayBrand}`}
                         >
                           <Trash2 className="size-3.5" />
                         </button>

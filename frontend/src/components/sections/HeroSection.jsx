@@ -35,6 +35,7 @@ export default function HeroSection({
   const [typedText, setTypedText] = useState("")
   const [phraseIndex, setPhraseIndex] = useState(0)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isPhone, setIsPhone] = useState(() => window.matchMedia("(max-width: 700px)").matches)
   // heroRef = poora hero section element (parallax calculation ke liye)
   // heroGlassRef = glass layer jo mouse se tilt hoti hai
   // heroParallaxFrame = animation frame ID (cleanup ke liye)
@@ -84,6 +85,13 @@ export default function HeroSection({
   useEffect(() => () => cancelAnimationFrame(heroParallaxFrame.current), [])
 
   useEffect(() => {
+    const phoneQuery = window.matchMedia("(max-width: 700px)")
+    const updatePhoneLayout = event => setIsPhone(event.matches)
+    phoneQuery.addEventListener("change", updatePhoneLayout)
+    return () => phoneQuery.removeEventListener("change", updatePhoneLayout)
+  }, [])
+
+  useEffect(() => {
     const phrase = TYPED_PHRASES[phraseIndex]
     const completed = typedText === phrase
     const empty = typedText.length === 0
@@ -108,28 +116,30 @@ export default function HeroSection({
       onPointerMove={handleHeroPointerMove}
     >
       {/* Background video layer — mouse se thoda move hoti hai */}
-      <div
-        ref={heroGlassRef}
-        className="hero-glass-layer absolute inset-[-5%] z-0"
-        aria-hidden="true"
-        style={{ transform: "translate3d(var(--parallax-x, 0px), var(--parallax-y, 0px), 0)" }}
-      >
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="hero-glass-video absolute inset-0 h-full w-full object-cover"
-          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/agentic-hero-9yW3wnTNMfn2U6lsVhTTZSJFEvAoSj.mp4"
-          style={{
-            transform: videoReady ? "scale(1.05)" : "scale(0.85)",
-            filter: theme === "dark"
-              ? "brightness(0.52) saturate(1.25) contrast(1.08)"
-              : "brightness(1.08) saturate(0.68) contrast(0.92)",
-            transition: "transform 2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.7s ease",
-          }}
-        />
-      </div>
+      {!isPhone && (
+        <div
+          ref={heroGlassRef}
+          className="hero-glass-layer absolute inset-[-5%] z-0"
+          aria-hidden="true"
+          style={{ transform: "translate3d(var(--parallax-x, 0px), var(--parallax-y, 0px), 0)" }}
+        >
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="hero-glass-video absolute inset-0 h-full w-full object-cover"
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/agentic-hero-9yW3wnTNMfn2U6lsVhTTZSJFEvAoSj.mp4"
+            style={{
+              transform: videoReady ? "scale(1.05)" : "scale(0.85)",
+              filter: theme === "dark"
+                ? "brightness(0.52) saturate(1.25) contrast(1.08)"
+                : "brightness(1.08) saturate(0.68) contrast(0.92)",
+              transition: "transform 2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.7s ease",
+            }}
+          />
+        </div>
+      )}
 
       {/* ── Bottom gradient overlay — text ko background se separate karta hai */}
       <div

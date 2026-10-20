@@ -28,6 +28,34 @@ const FAQS = [
     question: "Can I create a custom alias?",
     answer: "Yes. Enter an alias when creating your link. If it is already taken, LinkPulse will let you know so you can try another.",
   },
+  {
+    question: "How do I create my first short link?",
+    answer: "Paste a full URL that starts with http:// or https://, then select Create short link. LinkPulse generates a short address automatically; open Advanced options if you want to customize it.",
+  },
+  {
+    question: "Can I set an expiry date or a click limit?",
+    answer: "Yes. Open Advanced options to choose when a link expires, set a maximum number of clicks, or make it a one-time link. Leave these settings blank if you do not need a limit.",
+  },
+  {
+    question: "What does a one-time link do?",
+    answer: "A one-time link allows one verified click, then blocks future redirects to the destination.",
+  },
+  {
+    question: "Can I pause a link and turn it back on later?",
+    answer: "Yes. In Your links, use the enable or disable action for a link. A disabled link can be enabled again from the same list.",
+  },
+  {
+    question: "Can I download a QR code for my short link?",
+    answer: "Yes. After creating a link, the confirmation window shows its QR code and lets you download it as an image to share or print.",
+  },
+  {
+    question: "Can I change the destination after creating a link?",
+    answer: "The current version does not let you edit a link’s destination. Create a new short link with the updated URL instead.",
+  },
+  {
+    question: "Which destination URLs are supported?",
+    answer: "LinkPulse supports web addresses that use HTTP or HTTPS. Other URL types are not accepted.",
+  },
 ]
 
 export default function FAQSection() {
@@ -64,7 +92,7 @@ export default function FAQSection() {
                     aria-expanded={isOpen}
                     onClick={() => setOpenQuestion(isOpen ? -1 : index)}
                   >
-                    <span className="faq-marquee-number">0{index + 1}</span>
+                    <span className="faq-marquee-number">{String(index + 1).padStart(2, "0")}</span>
                     <span className="faq-marquee-question">{faq.question}</span>
                     <ChevronDown className="faq-chevron" aria-hidden="true" />
                   </button>
