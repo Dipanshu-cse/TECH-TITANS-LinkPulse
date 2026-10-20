@@ -517,6 +517,15 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete,
   // openPopover = { id, anchorEl } of the open analytics popover, or null
   const [openPopover, setOpenPopover] = useState(null)
   const [query, setQuery] = useState("")
+  const [orderedIds, setOrderedIds] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("linkpulse-link-order") || "[]")
+      return Array.isArray(saved) ? saved : []
+    } catch {
+      return []
+    }
+  })
+  const [draggingId, setDraggingId] = useState(null)
   const [statusFilter, setStatusFilter] = useState("all")
   const filteredLinks = links.filter(link => {
     const search = query.trim().toLowerCase()
@@ -531,6 +540,26 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete,
       : link.password_hash ? "protected" : "active"
     return matchesQuery && (statusFilter === "all" || status === statusFilter)
   })
+
+  // Keep the user's manual order while retaining newly created links and links
+  // that become visible after a search/filter change.
+  const displayLinks = [
+    ...orderedIds.map(id => filteredLinks.find(link => link.id === id)).filter(Boolean),
+    ...filteredLinks.filter(link => !orderedIds.includes(link.id)),
+  ]
+
+  function handleDrop(event, targetId) {
+    event.preventDefault()
+    if (!draggingId || draggingId === targetId) return
+    const ids = displayLinks.map(link => link.id)
+    const from = ids.indexOf(draggingId)
+    const to = ids.indexOf(targetId)
+    if (from < 0 || to < 0) return
+    ids.splice(to, 0, ...ids.splice(from, 1))
+    setOrderedIds(ids)
+    try { localStorage.setItem("linkpulse-link-order", JSON.stringify(ids)) } catch { /* storage may be unavailable */ }
+    setDraggingId(null)
+  }
 
   return (
     <GlassCard className="mt-4 overflow-hidden">
@@ -631,7 +660,7 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete,
                 </td>
               </tr>
             ) : (
-              filteredLinks.map(link => {
+              displayLinks.map(link => {
                 const directUrl = `${window.location.origin}/${link.short_code}`
                 const displayBrand = `go.lp/${link.short_code}`
                 const isExpired = link.expires_at && new Date(link.expires_at) < new Date()
@@ -657,7 +686,17 @@ function LinksTable({ links, loading, copied, onCopy, onToggleDisable, onDelete,
                 return (
                   <tr
                     key={link.id || link.short_code}
-                    className="table-row-hover border-b border-white/[0.04] last:border-0"
+                    draggable
+                    onDragStart={event => {
+                      setDraggingId(link.id)
+                      event.dataTransfer.effectAllowed = "move"
+                      event.dataTransfer.setData("text/plain", String(link.id))
+                    }}
+                    onDragOver={event => { event.preventDefault(); event.dataTransfer.dropEffect = "move" }}
+                    onDrop={event => handleDrop(event, link.id)}
+                    onDragEnd={() => setDraggingId(null)}
+                    className={`table-row-hover border-b border-white/[0.04] last:border-0 ${draggingId === link.id ? "opacity-40" : ""}`}
+                    title="Drag to reorder"
                   >
                     {/* Short link + copy */}
                     <td className="px-6 py-5 md:px-8">
